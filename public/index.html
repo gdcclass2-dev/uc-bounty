@@ -478,11 +478,23 @@
   </div>
 </div>
 
+<!-- Redeem Ad Modal -->
+<div class="modal hidden" id="redeemAdModal">
+  <div class="modal-box" style="text-align:center">
+    <h2>🎬 ONE LAST AD</h2>
+    <p>Please watch this short ad to unlock your <b><span id="redeemAdUC">300</span> UC</b> redeem.</p>
+    <div style="font-size:60px;margin:20px 0">📺</div>
+    <p style="color:var(--text-dim);font-size:14px">Ad will open in a new tab.<br>Come back here after watching to continue.</p>
+    <button class="btn btn-gold btn-block" id="redeemAdBtn" onclick="claimRedeemAd()">I WATCHED THE AD ➜</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('redeemAdModal')">Cancel</button>
+  </div>
+</div>
+
 <!-- PUBG ID Modal -->
 <div class="modal hidden" id="pubgModal">
   <div class="modal-box">
     <h2>🎮 ENTER PUBG ID</h2>
-    <p>We'll transfer <b><span id="pubgUC">300</span> UC</b> to this account within 24-48h.</p>
+    <p>We'll transfer <b><span id="pubgUC">300</span> UC</b> to this account within 7 days.</p>
     <input id="pubgInput" type="text" placeholder="Your PUBG Player ID" maxlength="20">
     <p class="hint">Find your ID: Profile → top-right corner number</p>
     <button class="btn btn-gold btn-block" onclick="submitRedeem()">CONFIRM REDEEM</button>

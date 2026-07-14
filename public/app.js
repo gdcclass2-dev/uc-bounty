@@ -465,9 +465,24 @@ async function openRedeem() {
     if (j.needsRating) {
       openRating();
     } else {
-      openPubgModal();
+      openRedeemAd();
     }
   } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== REDEEM AD (one ad before PUBG ID) =====
+function openRedeemAd() {
+  document.getElementById('redeemAdUC').textContent = SETTINGS.ucPerRedeem;
+  document.getElementById('redeemAdModal').classList.remove('hidden');
+  setTimeout(() => {
+    if (typeof window !== 'undefined') {
+      window.open('https://al5sm.com/click', '_blank');
+    }
+  }, 500);
+}
+function claimRedeemAd() {
+  closeModal('redeemAdModal');
+  openPubgModal();
 }
 
 // ===== RATING =====
@@ -548,7 +563,7 @@ async function submitRedeem() {
     refreshUI();
     closeModal('pubgModal');
     document.getElementById('successMsg').textContent =
-      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted. We will transfer to PUBG ID ' + pubgId + ' within 24-48h.';
+      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted! 🎮 Your UC will be sent to your PUBG account (ID: ' + pubgId + ') within 7 days. Thank you for using UC BOUNTY!;
     document.getElementById('successModal').classList.remove('hidden');
   } catch (e) { toast('❌ ' + e.message); }
 }
