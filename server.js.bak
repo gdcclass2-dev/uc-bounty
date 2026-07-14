@@ -1,0 +1,378 @@
+// UC Bounty - Real backend
+// Run: node server.js
+// Free deploy: render.com (see render.yaml + README.md)
+
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const DB_PATH = path.join(__dirname, 'db.json');
+
+// ============ DATABASE ============
+function loadDB() {
+  if (!fs.existsSync(DB_PATH)) {
+    const init = {
+      users: {},          // deviceId -> user
+      sessions: {},       // token -> deviceId
+      redeemRequests: [], // array of requests
+      settings: {
+        pointsPerUc: 20,            // 20 points = 1 UC (so 6000 pts = 300 UC)
+        ucPerRedeem: 300,           // amount of UC per redeem
+        minPointsToRedeem: 6000,    // unlock threshold
+        freeRedeemCooldownHours: 3, // free user cooldown
+        premiumRedeemCooldownHours: 0, // premium = instant
+        dailyAdLimit: 50,           // max ads per day per user
+        signupBonus: 50,            // free points on signup
+        adminPassword: 'admin123',  // CHANGE THIS in admin panel
+        adsterraLink: 'https://www.profitabledisplaynetwork.com/xxxx', // your ad link
+        monetagLink: 'https://otieu.com/4/xxxx',                       // backup
+        offerWallLink: 'https://www.profitabledisplaynetwork.com/yyyy',// CPA downloads
+        announcements: [],
+        quizQuestions: [
+          { q: "Which map in PUBG Mobile is the smallest?", opts: ["Erangel","Sanhok","Miramar","Vikendi"], a: 1 },
+          { q: "What does 'UC' stand for in PUBG?", opts: ["Unknown Cash","Unknown Coin","Universal Credit","Ultra Cash"], a: 1 },
+          { q: "How many players start a classic match?", opts: ["50","75","100","64"], a: 2 },
+          { q: "Which weapon is known as 'the king of sniper rifles'?", opts: ["M24","AWM","Kar98k","M82B"], a: 1 },
+          { q: "What is the max level in PUBG Mobile (basic)?", opts: ["50","75","100","120"], a: 2 }
+        ],
+        spinRewards: [5, 10, 15, 20, 25, 30, 50, 75, 100]
+      }
+    };
+    fs.writeFileSync(DB_PATH, JSON.stringify(init, null, 2));
+    return init;
+  }
+  return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+}
+function saveDB() { fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2)); }
+let db = loadDB();
+
+// ============ MIDDLEWARE ============
+app.use(express.json({ limit: '2mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Device fingerprint from header (client generates it)
+function getDevice(req) {
+  return req.headers['x-device-id'] || req.body?.deviceId || 'unknown';
+}
+function auth(req, res, next) {
+  const token = req.headers['authorization']?.replace('Bearer ', '') || req.body?.token;
+  const deviceId = db.sessions[token];
+  if (!deviceId || !db.users[deviceId]) return res.status(401).json({ error: 'Unauthorized' });
+  req.user = db.users[deviceId];
+  req.deviceId = deviceId;
+  next();
+}
+function adminAuth(req, res, next) {
+  const pw = req.headers['x-admin-password'] || req.body?.password;
+  if (pw !== db.settings.adminPassword) return res.status(403).json({ error: 'Forbidden' });
+  next();
+}
+
+// ============ API: AUTH ============
+app.post('/api/signup', (req, res) => {
+  const { username, pubgId, deviceId, fp } = req.body;
+  if (!username || !deviceId) return res.status(400).json({ error: 'Missing fields' });
+  if (username.length < 3 || username.length > 16) return res.status(400).json({ error: 'Username 3-16 chars' });
+  if (db.users[deviceId]) return res.status(409).json({ error: 'Device already registered' });
+
+  // Check duplicate username
+  const taken = Object.values(db.users).find(u => u.username.toLowerCase() === username.toLowerCase());
+  if (taken) return res.status(409).json({ error: 'Username taken' });
+
+  const token = crypto.randomBytes(24).toString('hex');
+  db.sessions[token] = deviceId;
+  const now = Date.now();
+  db.users[deviceId] = {
+    deviceId,
+    fp: fp || '',
+    username,
+    pubgId: pubgId || '',
+    points: db.settings.signupBonus,
+    totalPointsEarned: db.settings.signupBonus,
+    level: 1,
+    xp: 0,
+    premium: false,
+    premiumUntil: 0,
+    isAdmin: false,
+    banned: false,
+    createdAt: now,
+    lastActive: now,
+    lastCheckin: 0,
+    checkinStreak: 0,
+    adsWatchedToday: 0,
+    adsResetAt: now + 86400000,
+    quizDoneToday: 0,
+    quizResetAt: now + 86400000,
+    spinLastAt: 0,
+    referrals: [],
+    referredBy: req.body.refCode || '',
+    lastRedeem: 0,
+    lastRatingSubmit: 0,
+    pendingRedeem: null,
+    redeemedCount: 0
+  };
+  // referral reward
+  if (req.body.refCode) {
+    const ref = Object.values(db.users).find(u => u.referralCode === req.body.refCode);
+    if (ref && ref.deviceId !== deviceId) {
+      ref.points += 50;
+      ref.totalPointsEarned += 50;
+      ref.referrals.push(deviceId);
+    }
+  }
+  saveDB();
+  res.json({ ok: true, token, user: db.users[deviceId] });
+});
+
+app.post('/api/login', (req, res) => {
+  const { deviceId } = req.body;
+  const user = db.users[deviceId];
+  if (!user) return res.status(404).json({ error: 'Not found' });
+  if (user.banned) return res.status(403).json({ error: 'Banned' });
+  const token = crypto.randomBytes(24).toString('hex');
+  db.sessions[token] = deviceId;
+  saveDB();
+  res.json({ ok: true, token, user });
+});
+
+app.get('/api/me', auth, (req, res) => {
+  req.user.lastActive = Date.now();
+  saveDB();
+  res.json({ user: req.user, settings: publicSettings() });
+});
+
+function publicSettings() {
+  const { adminPassword, ...safe } = db.settings;
+  return safe;
+}
+
+// ============ API: EARN ============
+app.post('/api/earn/ad', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  const now = Date.now();
+  if (now > u.adsResetAt) { u.adsWatchedToday = 0; u.adsResetAt = now + 86400000; }
+  if (u.adsWatchedToday >= db.settings.dailyAdLimit) return res.status(429).json({ error: 'Daily ad limit reached' });
+  u.adsWatchedToday++;
+  const pts = u.premium ? 10 : 5;
+  addPoints(u, pts, 'ad');
+  res.json({ ok: true, points: pts, user: u });
+});
+
+app.post('/api/earn/quiz', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  const now = Date.now();
+  if (now > u.quizResetAt) { u.quizDoneToday = 0; u.quizResetAt = now + 86400000; }
+  if (u.quizDoneToday >= 3) return res.status(429).json({ error: 'Quiz limit reached' });
+  const { correct } = req.body;
+  const c = Math.max(0, Math.min(5, parseInt(correct) || 0));
+  const pts = c * (u.premium ? 4 : 2);
+  u.quizDoneToday++;
+  addPoints(u, pts, 'quiz');
+  res.json({ ok: true, points: pts, user: u });
+});
+
+app.post('/api/earn/spin', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  const now = Date.now();
+  const cooldown = 6 * 3600 * 1000; // 6 hours
+  if (now - u.spinLastAt < cooldown && !u.premium) return res.status(429).json({ error: 'Spin cooldown' });
+  u.spinLastAt = now;
+  const rewards = db.settings.spinRewards;
+  const reward = rewards[Math.floor(Math.random() * rewards.length)];
+  addPoints(u, reward, 'spin');
+  res.json({ ok: true, points: reward, user: u });
+});
+
+app.post('/api/earn/checkin', auth, (req, res) => {
+  const u = req.user;
+  const now = Date.now();
+  const dayMs = 86400000;
+  if (now - u.lastCheckin < dayMs) return res.status(429).json({ error: 'Already checked in' });
+  u.checkinStreak = (u.checkinStreak || 0) + 1;
+  const basePts = 5 + Math.min(u.checkinStreak, 30); // 5..35
+  const pts = u.premium ? basePts * 2 : basePts;
+  u.lastCheckin = now;
+  addPoints(u, pts, 'checkin');
+  res.json({ ok: true, points: pts, streak: u.checkinStreak, user: u });
+});
+
+app.post('/api/earn/offer', auth, (req, res) => {
+  // User claims they completed a CPA offer
+  const u = req.user;
+  const { offerId } = req.body;
+  // In real production, you'd verify via postback from Adsterra/Monetag
+  // For now, server trusts client (admin can see and ban fraud)
+  const pts = 30;
+  addPoints(u, pts, 'offer:' + offerId);
+  res.json({ ok: true, points: pts, user: u });
+});
+
+app.post('/api/earn/game', auth, (req, res) => {
+  const u = req.user;
+  const { score } = req.body;
+  const s = Math.max(0, Math.min(1000, parseInt(score) || 0));
+  const pts = Math.min(20, Math.floor(s / 50));
+  if (pts === 0) return res.status(400).json({ error: 'Score too low' });
+  addPoints(u, pts, 'game');
+  res.json({ ok: true, points: pts, user: u });
+});
+
+function addPoints(user, pts, source) {
+  user.points += pts;
+  user.totalPointsEarned += pts;
+  user.xp += pts;
+  user.level = 1 + Math.floor(user.xp / 100);
+}
+
+// ============ API: REDEEM ============
+app.get('/api/redeem/status', auth, (req, res) => {
+  const u = req.user;
+  const s = db.settings;
+  const eligible = u.points >= s.minPointsToRedeem;
+  const cooldownMs = (u.premium ? s.premiumRedeemCooldownHours : s.freeRedeemCooldownHours) * 3600 * 1000;
+  const nextRedeemAt = u.lastRedeem + cooldownMs;
+  const canRedeem = eligible && Date.now() >= nextRedeemAt;
+  res.json({
+    eligible, canRedeem,
+    points: u.points,
+    minPoints: s.minPointsToRedeem,
+    ucPerRedeem: s.ucPerRedeem,
+    pointsPerUc: s.pointsPerUc,
+    nextRedeemAt,
+    cooldownRemaining: Math.max(0, nextRedeemAt - Date.now()),
+    premium: u.premium,
+    needsRating: !u.lastRatingSubmit || (Date.now() - u.lastRatingSubmit > 30 * 86400000)
+  });
+});
+
+app.post('/api/redeem/rating', auth, (req, res) => {
+  const { stars, feedback } = req.body;
+  if (stars !== 5) return res.status(400).json({ error: '5-star rating required' });
+  if (!feedback || feedback.length < 5) return res.status(400).json({ error: 'Please leave positive feedback' });
+  req.user.lastRatingSubmit = Date.now();
+  saveDB();
+  res.json({ ok: true });
+});
+
+app.post('/api/redeem/request', auth, (req, res) => {
+  const u = req.user;
+  const s = db.settings;
+  if (u.points < s.minPointsToRedeem) return res.status(400).json({ error: 'Not enough points' });
+  const cooldownMs = (u.premium ? s.premiumRedeemCooldownHours : s.freeRedeemCooldownHours) * 3600 * 1000;
+  if (Date.now() - u.lastRedeem < cooldownMs) return res.status(400).json({ error: 'Cooldown active' });
+  if (!u.lastRatingSubmit || (Date.now() - u.lastRatingSubmit > 30 * 86400000)) {
+    return res.status(400).json({ error: 'Rating required first' });
+  }
+  const { pubgId } = req.body;
+  if (!pubgId || pubgId.length < 5) return res.status(400).json({ error: 'Valid PUBG ID required' });
+  // Deduct points
+  u.points -= s.minPointsToRedeem;
+  u.lastRedeem = Date.now();
+  u.redeemedCount++;
+  const reqObj = {
+    id: crypto.randomBytes(8).toString('hex'),
+    deviceId: u.deviceId,
+    username: u.username,
+    pubgId,
+    uc: s.ucPerRedeem,
+    pointsDeducted: s.minPointsToRedeem,
+    premium: u.premium,
+    status: 'pending', // pending | paid | rejected
+    createdAt: Date.now(),
+    paidAt: null
+  };
+  db.redeemRequests.push(reqObj);
+  saveDB();
+  res.json({ ok: true, request: reqObj });
+});
+
+app.get('/api/leaderboard', (req, res) => {
+  const top = Object.values(db.users)
+    .filter(u => !u.banned)
+    .sort((a, b) => b.totalPointsEarned - a.totalPointsEarned)
+    .slice(0, 50)
+    .map(u => ({ username: u.username, points: u.totalPointsEarned, level: u.level, premium: u.premium }));
+  res.json({ leaderboard: top });
+});
+
+// ============ API: ADMIN ============
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (password !== db.settings.adminPassword) return res.status(403).json({ error: 'Wrong password' });
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/stats', adminAuth, (req, res) => {
+  const users = Object.values(db.users);
+  res.json({
+    totalUsers: users.length,
+    activeUsers: users.filter(u => Date.now() - u.lastActive < 86400000).length,
+    premiumUsers: users.filter(u => u.premium).length,
+    totalPoints: users.reduce((s, u) => s + u.points, 0),
+    totalRedeemed: db.redeemRequests.length,
+    pendingRedeems: db.redeemRequests.filter(r => r.status === 'pending').length,
+    totalUCPaid: db.redeemRequests.filter(r => r.status === 'paid').reduce((s, r) => s + r.uc, 0)
+  });
+});
+
+app.get('/api/admin/users', adminAuth, (req, res) => {
+  res.json({ users: Object.values(db.users).map(u => ({
+    ...u,
+    lastActive: new Date(u.lastActive).toISOString()
+  })) });
+});
+
+app.get('/api/admin/redeems', adminAuth, (req, res) => {
+  res.json({ redeems: db.redeemRequests.sort((a, b) => b.createdAt - a.createdAt) });
+});
+
+app.post('/api/admin/redeem/update', adminAuth, (req, res) => {
+  const { id, status } = req.body;
+  const r = db.redeemRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  r.status = status;
+  r.paidAt = status === 'paid' ? Date.now() : null;
+  saveDB();
+  res.json({ ok: true, request: r });
+});
+
+app.post('/api/admin/user/update', adminAuth, (req, res) => {
+  const { deviceId, points, premium, banned, pubgId } = req.body;
+  const u = db.users[deviceId];
+  if (!u) return res.status(404).json({ error: 'Not found' });
+  if (typeof points === 'number') u.points = points;
+  if (typeof premium === 'boolean') { u.premium = premium; u.premiumUntil = premium ? Date.now() + 30 * 86400000 : 0; }
+  if (typeof banned === 'boolean') u.banned = banned;
+  if (typeof pubgId === 'string') u.pubgId = pubgId;
+  saveDB();
+  res.json({ ok: true, user: u });
+});
+
+app.post('/api/admin/settings', adminAuth, (req, res) => {
+  const allowed = ['pointsPerUc','ucPerRedeem','minPointsToRedeem','freeRedeemCooldownHours',
+    'premiumRedeemCooldownHours','dailyAdLimit','signupBonus','adsterraLink','monetagLink','offerWallLink'];
+  for (const k of allowed) if (k in req.body) db.settings[k] = req.body[k];
+  saveDB();
+  res.json({ ok: true, settings: publicSettings() });
+});
+
+app.post('/api/admin/announce', adminAuth, (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: 'Empty' });
+  db.settings.announcements.unshift({ id: crypto.randomBytes(4).toString('hex'), message, at: Date.now() });
+  if (db.settings.announcements.length > 10) db.settings.announcements.length = 10;
+  saveDB();
+  res.json({ ok: true });
+});
+
+// ============ START ============
+app.listen(PORT, () => {
+  console.log(`🎯 UC Bounty running on port ${PORT}`);
+  console.log(`📱 Open: http://localhost:${PORT}`);
+});
