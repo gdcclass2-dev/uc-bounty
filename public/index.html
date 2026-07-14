@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#FF6B00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>UC Bounty - Earn Real UC</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+</head>
+<body>
+
+<!-- Animated PUBG background -->
+<div class="bg-grid"></div>
+<div class="bg-particles"></div>
+<div class="bg-vignette"></div>
+
+<!-- ============== SPLASH ============== -->
+<div id="splash" class="screen active">
+  <div class="parachute">🪂</div>
+  <div class="logo-big">
+    <div class="crosshair">🎯</div>
+    <h1 class="brand">UC <span>BOUNTY</span></h1>
+    <p class="tagline">HUNT ADS • EARN UC • CLAIM BOUNTY</p>
+  </div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <p class="splash-foot">v1.0 • For PUBG Mobile players</p>
+</div>
+
+<!-- ============== AUTH ============== -->
+<div id="auth" class="screen">
+  <div class="auth-card">
+    <div class="logo-small">
+      <div class="crosshair">🎯</div>
+      <h2>UC <span>BOUNTY</span></h2>
+    </div>
+    <p class="auth-sub">Join the hunt. Earn real UC.</p>
+    <div class="input-group">
+      <label>In-game Name</label>
+      <input id="authUsername" type="text" placeholder="e.g. ShadowHunter" maxlength="16" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>PUBG Player ID <span class="optional">(optional now, required to redeem)</span></label>
+      <input id="authPubgId" type="text" placeholder="e.g. 5123456789" maxlength="20" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>Referral Code <span class="optional">(optional)</span></label>
+      <input id="authRef" type="text" placeholder="Friend's code" maxlength="12" autocomplete="off">
+    </div>
+    <button id="authSubmit" class="btn btn-primary">START HUNTING</button>
+    <p class="auth-fine">By continuing you accept that points are earned by watching ads & completing offers. UC is transferred manually by the admin within 24–48h after a valid request.</p>
+  </div>
+</div>
+
+<!-- ============== APP ============== -->
+<div id="app" class="screen">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand-mini">🎯 UC<span>BOUNTY</span></div>
+    <div class="balance-pill" onclick="switchTab('wallet')">
+      <span class="pts-icon">💎</span>
+      <span id="topPoints">0</span> pts
+    </div>
+  </header>
+
+  <!-- Announcement banner -->
+  <div id="annBar" class="ann-bar hidden"></div>
+
+  <!-- TAB: HOME -->
+  <div id="tab-home" class="tab active">
+    <div class="hero-card">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="level-badge" id="levelBadge">LV 1</div>
+        <div class="balance-big">
+          <div class="bal-label">YOUR BOUNTY</div>
+          <div class="bal-num"><span id="bigPoints">0</span> <span class="pts-unit">PTS</span></div>
+          <div class="bal-sub" id="balUC">= 0 UC</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-info">
+            <span id="progToRedeem">0 / 6000 to redeem</span>
+            <span id="progPct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+        </div>
+        <button class="btn btn-gold" id="redeemBtn" onclick="openRedeem()">
+          <span class="lock-icon">🔒</span> REDEEM UC
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <h3 class="section-h">QUICK HUNT</h3>
+    <div class="quick-grid">
+      <button class="qcard" onclick="watchAd()">
+        <div class="qicon">📺</div>
+        <div class="qtitle">Watch Ad</div>
+        <div class="qpts">+5 pts</div>
+      </button>
+      <button class="qcard" onclick="openQuiz()">
+        <div class="qicon">🧠</div>
+        <div class="qtitle">Daily Quiz</div>
+        <div class="qpts">up to +10</div>
+      </button>
+      <button class="qcard" onclick="doSpin()">
+        <div class="qicon">🎰</div>
+        <div class="qtitle">Lucky Spin</div>
+        <div class="qpts">5-100 pts</div>
+      </button>
+      <button class="qcard" onclick="checkin()">
+        <div class="qicon">🔥</div>
+        <div class="qtitle">Check-in</div>
+        <div class="qpts" id="checkinPts">+5 pts</div>
+      </button>
+    </div>
+
+    <!-- Daily offers -->
+    <h3 class="section-h">HIGH-VALUE OFFERS <span class="hot">🔥</span></h3>
+    <div class="offer-list" id="offerList">
+      <div class="offer-card" onclick="openOffer('game1')">
+        <div class="offer-icon">🎮</div>
+        <div class="offer-info">
+          <div class="offer-title">Install & Try: Battle Arena</div>
+          <div class="offer-sub">Reach level 5 in this game</div>
+        </div>
+        <div class="offer-reward">+30</div>
+      </div>
+      <div class="offer-card" onclick="openOffer('game2')">
+        <div class="offer-icon">⚔️</div>
+        <div class="offer-info">
+          <div class="offer-title">Install: Shadow Legends</div>
+          <div class="offer-sub">Complete tutorial</div>
+        </div>
+        <div class="offer-reward">+25</div>
+      </div>
+      <div class="offer-card" onclick="openOffer('app3')">
+        <div class="offer-icon">📱</div>
+        <div class="offer-info">
+          <div class="offer-title">Try Premium VPN</div>
+          <div class="offer-sub">Free trial signup</div>
+        </div>
+        <div class="offer-reward">+20</div>
+      </div>
+      <div class="offer-card" onclick="openOffer('survey')">
+        <div class="offer-icon">📋</div>
+        <div class="offer-info">
+          <div class="offer-title">Quick Survey</div>
+          <div class="offer-sub">2 min questionnaire</div>
+        </div>
+        <div class="offer-reward">+15</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <h3 class="section-h">TOP HUNTERS</h3>
+    <div class="leaderboard" id="leaderboard"></div>
+  </div>
+
+  <!-- TAB: EARN -->
+  <div id="tab-earn" class="tab">
+    <h2 class="page-title">🎯 EARN POINTS</h2>
+
+    <div class="earn-section">
+      <h3 class="section-h">📺 WATCH & EARN</h3>
+      <div class="task-list">
+        <div class="task-card" data-task="ad">
+          <div class="task-icon">📺</div>
+          <div class="task-info">
+            <div class="task-name">Watch Video Ad</div>
+            <div class="task-sub">30s • <span class="remaining" id="adRem">50/50</span></div>
+          </div>
+          <button class="btn btn-sm" onclick="watchAd()">+5</button>
+        </div>
+        <div class="task-card" data-task="ad2">
+          <div class="task-icon">🎬</div>
+          <div class="task-info">
+            <div class="task-name">Rewarded Video (Long)</div>
+            <div class="task-sub">60s • higher reward</div>
+          </div>
+          <button class="btn btn-sm" onclick="watchAdLong()">+10</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">🧠 PLAY & WIN</h3>
+      <div class="task-list">
+        <div class="task-card">
+          <div class="task-icon">❓</div>
+          <div class="task-info">
+            <div class="task-name">Daily Quiz</div>
+            <div class="task-sub">5 questions • +2 per correct</div>
+          </div>
+          <button class="btn btn-sm" onclick="openQuiz()">START</button>
+        </div>
+        <div class="task-card">
+          <div class="task-icon">🎰</div>
+          <div class="task-info">
+            <div class="task-name">Lucky Spin</div>
+            <div class="task-sub">Free every 6h</div>
+          </div>
+          <button class="btn btn-sm" onclick="doSpin()">SPIN</button>
+        </div>
+        <div class="task-card">
+          <div class="task-icon">🎮</div>
+          <div class="task-info">
+            <div class="task-name">Tap Speed Game</div>
+            <div class="task-sub">Tap fast to earn</div>
+          </div>
+          <button class="btn btn-sm" onclick="openGame()">PLAY</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">📥 DOWNLOAD OFFERS</h3>
+      <div class="task-list">
+        <div class="task-card" onclick="openOffer('d1')">
+          <div class="task-icon">⚔️</div>
+          <div class="task-info">
+            <div class="task-name">Install: Shadow Fight</div>
+            <div class="task-sub">Reach level 3</div>
+          </div>
+          <div class="reward-pill">+50</div>
+        </div>
+        <div class="task-card" onclick="openOffer('d2')">
+          <div class="task-icon">🚗</div>
+          <div class="task-info">
+            <div class="task-name">Install: Racing Rivals</div>
+            <div class="task-sub">Complete 1 race</div>
+          </div>
+          <div class="reward-pill">+40</div>
+        </div>
+        <div class="task-card" onclick="openOffer('d3')">
+          <div class="task-icon">🏰</div>
+          <div class="task-info">
+            <div class="task-name">Install: Lords Mobile</div>
+            <div class="task-sub">Build a castle</div>
+          </div>
+          <div class="reward-pill">+45</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">📣 SOCIAL TASKS</h3>
+      <div class="task-list">
+        <div class="task-card" onclick="doSocial('yt')">
+          <div class="task-icon">▶️</div>
+          <div class="task-info">
+            <div class="task-name">Subscribe YouTube</div>
+            <div class="task-sub">Follow our channel</div>
+          </div>
+          <div class="reward-pill">+10</div>
+        </div>
+        <div class="task-card" onclick="doSocial('ig')">
+          <div class="task-icon">📷</div>
+          <div class="task-info">
+            <div class="task-name">Follow Instagram</div>
+            <div class="task-sub">@ucbounty</div>
+          </div>
+          <div class="reward-pill">+10</div>
+        </div>
+        <div class="task-card" onclick="doSocial('tg')">
+          <div class="task-icon">✈️</div>
+          <div class="task-info">
+            <div class="task-name">Join Telegram</div>
+            <div class="task-sub">Get updates & codes</div>
+          </div>
+          <div class="reward-pill">+15</div>
+        </div>
+        <div class="task-card" onclick="doSocial('wh')">
+          <div class="task-icon">💬</div>
+          <div class="task-info">
+            <div class="task-name">Join WhatsApp Channel</div>
+            <div class="task-sub">Bonus codes daily</div>
+          </div>
+          <div class="reward-pill">+15</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: WALLET -->
+  <div id="tab-wallet" class="tab">
+    <h2 class="page-title">💰 WALLET</h2>
+    <div class="wallet-hero">
+      <div class="wh-label">CURRENT BALANCE</div>
+      <div class="wh-num"><span id="walletPoints">0</span> <span class="pts-unit">PTS</span></div>
+      <div class="wh-sub" id="walletUC">= 0 UC</div>
+    </div>
+    <div class="wallet-stats">
+      <div class="ws-card">
+        <div class="ws-num" id="wsToday">0</div>
+        <div class="ws-label">Today</div>
+      </div>
+      <div class="ws-card">
+        <div class="ws-num" id="wsWeek">0</div>
+        <div class="ws-label">This Week</div>
+      </div>
+      <div class="ws-card">
+        <div class="ws-num" id="wsAll">0</div>
+        <div class="ws-label">All Time</div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" onclick="openRedeem()">REDEEM UC</button>
+    <div class="history" id="history">
+      <h3 class="section-h">RECENT ACTIVITY</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PROFILE -->
+  <div id="tab-profile" class="tab">
+    <div class="profile-card">
+      <div class="avatar" id="avatar">🎮</div>
+      <h2 id="pUsername">Hunter</h2>
+      <div class="premium-badge hidden" id="premBadge">💎 PREMIUM</div>
+      <div class="pubg-line">PUBG ID: <span id="pPubgId">—</span></div>
+    </div>
+    <div class="profile-list">
+      <div class="prof-row" onclick="openReferral()">
+        <div class="prof-icon">👥</div>
+        <div class="prof-info">
+          <div class="prof-title">Invite Friends</div>
+          <div class="prof-sub">+50 pts per friend</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openPremium()">
+        <div class="prof-icon">💎</div>
+        <div class="prof-info">
+          <div class="prof-title">Get Premium</div>
+          <div class="prof-sub">2x points • No redeem cooldown</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openHistory()">
+        <div class="prof-icon">📜</div>
+        <div class="prof-info">
+          <div class="prof-title">Redeem History</div>
+          <div class="prof-sub">Track your UC claims</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openSupport()">
+        <div class="prof-icon">🛟</div>
+        <div class="prof-info">
+          <div class="prof-title">Support</div>
+          <div class="prof-sub">Get help on WhatsApp/Telegram</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+    </div>
+    <p class="version">UC Bounty v1.0.0</p>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home"><span>🏠</span><small>Home</small></button>
+    <button class="nav-btn" data-tab="earn"><span>🎯</span><small>Earn</small></button>
+    <button class="nav-btn" data-tab="wallet"><span>💰</span><small>Wallet</small></button>
+    <button class="nav-btn" data-tab="profile"><span>👤</span><small>Profile</small></button>
+  </nav>
+</div>
+
+<!-- ============== MODALS ============== -->
+
+<!-- Ad Modal -->
+<div class="modal hidden" id="adModal">
+  <div class="modal-box ad-box">
+    <div class="ad-timer-bar"><div class="ad-timer-fill" id="adTimerFill"></div></div>
+    <div class="ad-content" id="adContent">
+      <div class="ad-spinner"></div>
+      <p>Loading sponsor...</p>
+    </div>
+    <div class="ad-foot">
+      <button class="btn btn-gold btn-block hidden" id="adClaimBtn" onclick="claimAd()">CLAIM REWARD</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('adModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Spin Modal -->
+<div class="modal hidden" id="spinModal">
+  <div class="modal-box">
+    <h2>🎰 LUCKY SPIN</h2>
+    <div class="wheel-wrap">
+      <div class="wheel" id="wheel">
+        <div class="wheel-seg" style="--i:0">5</div>
+        <div class="wheel-seg" style="--i:1">10</div>
+        <div class="wheel-seg" style="--i:2">15</div>
+        <div class="wheel-seg" style="--i:3">20</div>
+        <div class="wheel-seg" style="--i:4">25</div>
+        <div class="wheel-seg" style="--i:5">30</div>
+        <div class="wheel-seg" style="--i:6">50</div>
+        <div class="wheel-seg" style="--i:7">75</div>
+        <div class="wheel-seg" style="--i:8">100</div>
+      </div>
+      <div class="wheel-pointer">▼</div>
+    </div>
+    <button class="btn btn-gold btn-block" id="spinGo" onclick="spinNow()">SPIN NOW</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('spinModal')">Close</button>
+  </div>
+</div>
+
+<!-- Quiz Modal -->
+<div class="modal hidden" id="quizModal">
+  <div class="modal-box quiz-box">
+    <div class="quiz-head">
+      <h2>🧠 DAILY QUIZ</h2>
+      <div class="quiz-prog">Answered: <span id="quizLimit">0/5</span></div>
+    </div>
+    <div id="quizQ"></div>
+    <div class="quiz-opts" id="quizOpts"></div>
+    <div class="quiz-score" id="quizScore">Score: 0</div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('quizModal')">Close</button>
+  </div>
+</div>
+
+<!-- Offer Verifying Modal -->
+<div class="modal hidden" id="offerModal">
+  <div class="modal-box offer-verify-box">
+    <h2>🔍 VERIFYING OFFER</h2>
+    <p>We're verifying your offer completion. Please keep this app open.</p>
+    <div class="offer-verify-icon">⏳</div>
+    <div class="offer-wait-bar"><div class="offer-wait-fill" id="offerWaitFill"></div></div>
+    <div class="offer-wait-text"><span id="offerWaitLeft">30</span>s / <span id="offerWaitTotal">30</span>s</div>
+    <button class="btn btn-gold btn-block hidden" id="offerClaimBtn" onclick="claimOffer()">CLAIM +30 PTS</button>
+    <p class="hint">⚠️ Closing this window or quitting before the timer ends will cancel the offer.</p>
+  </div>
+</div>
+
+<!-- Tap Game Modal -->
+<div class="modal hidden" id="gameModal">
+  <div class="modal-box game-box">
+    <h2>⚡ TAP SPEED</h2>
+    <p>Tap the target as many times as you can in 10 seconds!</p>
+    <div class="game-timer" id="gameTimer">10</div>
+    <button class="game-target" id="gameTarget" disabled>TAP ME</button>
+    <div class="game-score">Score: <span id="gameScore">0</span></div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('gameModal')">Close</button>
+  </div>
+</div>
+
+<!-- Rating Modal -->
+<div class="modal hidden" id="ratingModal">
+  <div class="modal-box">
+    <h2>⭐ RATE US</h2>
+    <p>Rate us 5 stars and share your experience to unlock redeem.</p>
+    <div class="stars" id="starsRow">
+      <span class="star" data-v="1">☆</span>
+      <span class="star" data-v="2">☆</span>
+      <span class="star" data-v="3">☆</span>
+      <span class="star" data-v="4">☆</span>
+      <span class="star" data-v="5">☆</span>
+    </div>
+    <textarea id="ratingText" placeholder="Your positive feedback helps us grow..." maxlength="200"></textarea>
+    <button class="btn btn-gold btn-block" onclick="submitRating()">SUBMIT & CONTINUE</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('ratingModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Cooldown Modal -->
+<div class="modal hidden" id="cooldownModal">
+  <div class="modal-box">
+    <h2>⏳ COOLDOWN</h2>
+    <p>Free users wait 3 hours between redeems.</p>
+    <div class="cd-clock" id="cdClock">02:47:13</div>
+    <p class="cd-tip">⭐ Upgrade to <b>Premium</b> for instant redeem with no cooldown!</p>
+    <button class="btn btn-gold btn-block" onclick="closeModal('cooldownModal');openPremium()">GO PREMIUM</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('cooldownModal')">OK</button>
+  </div>
+</div>
+
+<!-- PUBG ID Modal -->
+<div class="modal hidden" id="pubgModal">
+  <div class="modal-box">
+    <h2>🎮 ENTER PUBG ID</h2>
+    <p>We'll transfer <b><span id="pubgUC">300</span> UC</b> to this account within 24-48h.</p>
+    <input id="pubgInput" type="text" placeholder="Your PUBG Player ID" maxlength="20">
+    <p class="hint">Find your ID: Profile → top-right corner number</p>
+    <button class="btn btn-gold btn-block" onclick="submitRedeem()">CONFIRM REDEEM</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('pubgModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div class="modal hidden" id="premModal">
+  <div class="modal-box">
+    <h2>💎 GO PREMIUM</h2>
+    <ul class="prem-list">
+      <li>✅ 2x points on all tasks</li>
+      <li>✅ Instant redeem (no cooldown)</li>
+      <li>✅ Premium badge</li>
+      <li>✅ Daily bonus +200 pts</li>
+      <li>✅ Priority support</li>
+    </ul>
+    <div class="prem-price">₹99 <small>/ month</small></div>
+    <button class="btn btn-gold btn-block" onclick="buyPremium()">ACTIVATE NOW</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('premModal')">Maybe later</button>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal hidden" id="successModal">
+  <div class="modal-box">
+    <div class="success-check">✅</div>
+    <h2>REQUEST SENT</h2>
+    <p id="successMsg">Your redeem request is being processed. UC will arrive in 24-48h.</p>
+    <button class="btn btn-primary btn-block" onclick="closeModal('successModal')">OK</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

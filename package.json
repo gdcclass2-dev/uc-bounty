@@ -1,0 +1,16 @@
+{
+  "name": "uc-bounty",
+  "version": "1.0.0",
+  "description": "UC Bounty - Real rewards app. Watch ads, complete offers, earn points, redeem UC.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

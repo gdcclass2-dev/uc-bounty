@@ -1,0 +1,585 @@
+// ===== UC BOUNTY - FRONTEND =====
+
+// ===== DEVICE FINGERPRINT (per device, not per user) =====
+function getDeviceId() {
+  let id = localStorage.getItem('ucb_deviceId');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('ucb_deviceId', id);
+  }
+  return id;
+}
+function getFP() {
+  // Simple device fingerprint
+  const data = [
+    navigator.userAgent, navigator.language, screen.width + 'x' + screen.height,
+    new Date().getTimezoneOffset(), navigator.hardwareConcurrency || 0
+  ].join('|');
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash) + data.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'fp_' + Math.abs(hash).toString(36);
+}
+
+// ===== STATE =====
+let TOKEN = localStorage.getItem('ucb_token') || null;
+let USER = null;
+let SETTINGS = null;
+let REFRESH_TIMER = null;
+let SPIN_RESULT = 0;
+
+const DEVICE_ID = getDeviceId();
+const FP = getFP();
+
+// ===== API =====
+async function api(path, body = {}, needAuth = true) {
+  const headers = { 'Content-Type': 'application/json', 'x-device-id': DEVICE_ID };
+  if (needAuth && TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  try {
+    const r = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
+    if (!r.ok) throw new Error(j.error || 'API error');
+    return j;
+  } catch (e) {
+    if (e.message.includes('fetch')) throw new Error('Network error. Check connection.');
+    throw e;
+  }
+}
+async function apiGet(path) {
+  const headers = { 'x-device-id': DEVICE_ID };
+  if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+  const r = await fetch(path, { headers });
+  return r.json();
+}
+
+// ===== SCREENS =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===== SPLASH → AUTH/APP =====
+window.addEventListener('load', () => {
+  setTimeout(async () => {
+    if (TOKEN) {
+      try {
+        const j = await apiGet('/api/me');
+        USER = j.user; SETTINGS = j.settings;
+        initApp();
+        return;
+      } catch (e) { doLogout(); }
+    }
+    showScreen('auth');
+  }, 1500);
+});
+
+// ===== AUTH =====
+document.getElementById('authSubmit').addEventListener('click', async () => {
+  const username = document.getElementById('authUsername').value.trim();
+  const pubgId = document.getElementById('authPubgId').value.trim();
+  const refCode = document.getElementById('authRef').value.trim();
+  if (!username) return toast('Enter a username');
+  try {
+    const j = await api('/api/signup', { username, pubgId, deviceId: DEVICE_ID, fp: FP, refCode }, false);
+    TOKEN = j.token; localStorage.setItem('ucb_token', TOKEN);
+    USER = j.user;
+    const me = await apiGet('/api/me');
+    SETTINGS = me.settings;
+    initApp();
+    toast('🎯 Welcome, ' + USER.username + '! +' + SETTINGS.signupBonus + ' bonus');
+  } catch (e) { toast('❌ ' + e.message); }
+});
+function doLogout() {
+  TOKEN = null; USER = null;
+  localStorage.removeItem('ucb_token');
+  showScreen('auth');
+}
+
+// ===== APP INIT =====
+function initApp() {
+  showScreen('app');
+  refreshUI();
+  refreshAdRemaining();
+  loadLeaderboard();
+  setInterval(refreshCooldownBar, 1000);
+}
+
+// ===== UI REFRESH =====
+function refreshUI() {
+  if (!USER) return;
+  document.getElementById('topPoints').textContent = formatNum(USER.points);
+  document.getElementById('bigPoints').textContent = formatNum(USER.points);
+  document.getElementById('walletPoints').textContent = formatNum(USER.points);
+  const uc = Math.floor(USER.points / SETTINGS.pointsPerUc);
+  document.getElementById('balUC').textContent = '= ' + uc + ' UC';
+  document.getElementById('walletUC').textContent = '= ' + uc + ' UC';
+  document.getElementById('levelBadge').textContent = 'LV ' + USER.level;
+  document.getElementById('pUsername').textContent = USER.username;
+  document.getElementById('pPubgId').textContent = USER.pubgId || '— not set —';
+  document.getElementById('pubgUC').textContent = SETTINGS.ucPerRedeem;
+  const pct = Math.min(100, (USER.points / SETTINGS.minPointsToRedeem) * 100);
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = Math.floor(pct) + '%';
+  document.getElementById('progToRedeem').textContent =
+    formatNum(USER.points) + ' / ' + formatNum(SETTINGS.minPointsToRedeem) + ' to redeem';
+  const locked = USER.points < SETTINGS.minPointsToRedeem;
+  document.getElementById('redeemBtn').innerHTML = locked
+    ? `<span class="lock-icon">🔒</span> REDEEM (need ${formatNum(SETTINGS.minPointsToRedeem - USER.points)} more)`
+    : `<span>🎁</span> REDEEM ${SETTINGS.ucPerRedeem} UC`;
+  document.getElementById('redeemBtn').disabled = locked;
+  const avatar = document.getElementById('avatar');
+  avatar.textContent = USER.premium ? '💎' : (USER.level >= 10 ? '🏆' : '🎮');
+  document.getElementById('premBadge').classList.toggle('hidden', !USER.premium);
+  const streak = USER.checkinStreak || 0;
+  document.getElementById('checkinPts').textContent = '+' + (5 + Math.min(streak, 30)) + ' pts';
+  // Announcements
+  if (SETTINGS.announcements && SETTINGS.announcements.length) {
+    const a = SETTINGS.announcements[0];
+    const bar = document.getElementById('annBar');
+    bar.textContent = '📢 ' + a.message;
+    bar.classList.remove('hidden');
+  }
+  refreshAdRemaining();
+}
+function refreshAdRemaining() {
+  if (!USER || !SETTINGS) return;
+  const used = USER.adsWatchedToday || 0;
+  const left = SETTINGS.dailyAdLimit - used;
+  const el = document.getElementById('adRem');
+  if (el) el.textContent = used + '/' + SETTINGS.dailyAdLimit;
+}
+function formatNum(n) {
+  n = Math.floor(n);
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// ===== TABS =====
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+function switchTab(tab) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.nav-btn[data-tab="${tab}"]`)?.classList.add('active');
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  document.getElementById('app').scrollTop = 0;
+  if (tab === 'wallet') refreshWallet();
+}
+
+// ===== WALLET =====
+function refreshWallet() {
+  // simple stats
+  const now = Date.now();
+  const allTx = USER.tx || [];
+  const today = allTx.filter(t => now - t.t < 86400000).reduce((s, t) => s + t.p, 0);
+  const week = allTx.filter(t => now - t.t < 7 * 86400000).reduce((s, t) => s + t.p, 0);
+  const all = allTx.reduce((s, t) => s + t.p, 0);
+  document.getElementById('wsToday').textContent = formatNum(today || 0);
+  document.getElementById('wsWeek').textContent = formatNum(week || 0);
+  document.getElementById('wsAll').textContent = formatNum(all || USER.totalPointsEarned || 0);
+  const list = document.getElementById('historyList');
+  if (allTx.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:20px">No activity yet. Start earning!</p>';
+  } else {
+    list.innerHTML = allTx.slice(-20).reverse().map(t =>
+      `<div class="hist-row"><span class="hist-source">${t.s}</span><span class="hist-pts">+${t.p} pts</span></div>`
+    ).join('');
+  }
+}
+
+// ===== EARN: AD =====
+async function watchAd() { doAd(5, 8); }
+async function watchAdLong() { doAd(10, 15); }
+function doAd(reward, seconds) {
+  if (USER.adsWatchedToday >= SETTINGS.dailyAdLimit) return toast('❌ Daily ad limit reached');
+  const modal = document.getElementById('adModal');
+  const content = document.getElementById('adContent');
+  const fill = document.getElementById('adTimerFill');
+  const claim = document.getElementById('adClaimBtn');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="ad-spinner"></div><p>Loading sponsor...</p>';
+  fill.style.width = '0%';
+  claim.classList.add('hidden');
+  // Show iframe with ad network (replace with your adsterra code)
+  // For now: simulated. To use real ads, uncomment below:
+  // content.innerHTML = `<iframe src="${SETTINGS.adsterraLink}" width="100%" height="300" frameborder="0"></iframe>`;
+  let elapsed = 0;
+  const total = seconds;
+  const tick = setInterval(() => {
+    elapsed += 0.1;
+    fill.style.width = Math.min(100, (elapsed / total) * 100) + '%';
+    if (elapsed >= total) {
+      clearInterval(tick);
+      claim.classList.remove('hidden');
+      content.innerHTML = '<div style="font-size:60px">✅</div><p>Ad completed!</p>';
+    }
+  }, 100);
+}
+async function claimAd() {
+  closeModal('adModal');
+  try {
+    const j = await api('/api/earn/ad', {});
+    USER = j.user; refreshUI();
+    pushTx('Watched ad', j.points);
+    toast('+' + j.points + ' pts!');
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== EARN: SPIN =====
+function doSpin() {
+  document.getElementById('spinModal').classList.remove('hidden');
+}
+async function spinNow() {
+  const btn = document.getElementById('spinGo');
+  btn.disabled = true;
+  try {
+    const j = await api('/api/earn/spin', {});
+    SPIN_RESULT = j.points;
+    USER = j.user;
+    // Animate wheel
+    const segs = SETTINGS.spinRewards.length;
+    const idx = SETTINGS.spinRewards.indexOf(SPIN_RESULT);
+    const deg = 360 * 5 + (360 - idx * (360 / segs) - (360 / segs) / 2);
+    document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
+    setTimeout(() => {
+      toast('🎰 +' + SPIN_RESULT + ' pts!');
+      pushTx('Lucky spin', SPIN_RESULT);
+      refreshUI();
+      btn.disabled = false;
+      closeModal('spinModal');
+    }, 4200);
+  } catch (e) {
+    toast('❌ ' + e.message);
+    btn.disabled = false;
+  }
+}
+
+// ===== EARN: QUIZ =====
+let quizState = { idx: 0, score: 0, qs: [], locked: false };
+function openQuiz() {
+  if (USER.quizDoneToday >= 3) return toast('❌ Quiz limit reached (3/day)');
+  // Fetch fresh settings
+  apiGet('/api/me').then(j => {
+    SETTINGS = j.settings;
+    quizState = { idx: 0, score: 0, qs: shuffle([...SETTINGS.quizQuestions]).slice(0, 5), locked: false };
+    renderQuiz();
+    document.getElementById('quizModal').classList.remove('hidden');
+  });
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function renderQuiz() {
+  const q = quizState.qs[quizState.idx];
+  if (!q) return finishQuiz();
+  document.getElementById('quizIdx').textContent = quizState.idx + 1;
+  document.getElementById('quizQ').textContent = q.q;
+  document.getElementById('quizScore').textContent = 'Score: ' + quizState.score;
+  const opts = document.getElementById('quizOpts');
+  opts.innerHTML = q.opts.map((o, i) => `<button class="quiz-opt" data-i="${i}">${o}</button>`).join('');
+  opts.querySelectorAll('.quiz-opt').forEach(b => {
+    b.addEventListener('click', () => onQuizAnswer(parseInt(b.dataset.i), q.a, b));
+  });
+  quizState.locked = false;
+}
+function onQuizAnswer(picked, correct, btn) {
+  if (quizState.locked) return;
+  quizState.locked = true;
+  const allBtns = document.querySelectorAll('#quizOpts .quiz-opt');
+  allBtns.forEach((b, i) => {
+    if (i === correct) b.classList.add('correct');
+    else if (i === picked) b.classList.add('wrong');
+    b.style.pointerEvents = 'none';
+  });
+  if (picked === correct) quizState.score++;
+  document.getElementById('quizScore').textContent = 'Score: ' + quizState.score;
+  setTimeout(() => {
+    quizState.idx++;
+    renderQuiz();
+  }, 900);
+}
+async function finishQuiz() {
+  closeModal('quizModal');
+  try {
+    const j = await api('/api/earn/quiz', { correct: quizState.score });
+    USER = j.user;
+    pushTx('Daily quiz (' + quizState.score + '/5)', j.points);
+    refreshUI();
+    toast('🧠 +' + j.points + ' pts!');
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== EARN: TAP GAME =====
+let gameState = { score: 0, time: 10, timer: null, running: false };
+function openGame() {
+  gameState = { score: 0, time: 10, timer: null, running: false };
+  document.getElementById('gameScore').textContent = '0';
+  document.getElementById('gameTimer').textContent = '10';
+  document.getElementById('gameTarget').disabled = false;
+  document.getElementById('gameModal').classList.remove('hidden');
+}
+document.getElementById('gameTarget').addEventListener('click', () => {
+  if (!gameState.running) {
+    gameState.running = true;
+    gameState.timer = setInterval(() => {
+      gameState.time--;
+      document.getElementById('gameTimer').textContent = gameState.time;
+      if (gameState.time <= 0) endGame();
+    }, 1000);
+  }
+  gameState.score++;
+  document.getElementById('gameScore').textContent = gameState.score;
+});
+async function endGame() {
+  clearInterval(gameState.timer);
+  document.getElementById('gameTarget').disabled = true;
+  try {
+    const j = await api('/api/earn/game', { score: gameState.score });
+    USER = j.user;
+    pushTx('Tap game (' + gameState.score + ')', j.points);
+    refreshUI();
+    toast('🎮 +' + j.points + ' pts!');
+  } catch (e) { toast('❌ ' + e.message); }
+  setTimeout(() => closeModal('gameModal'), 800);
+}
+
+// ===== EARN: CHECK-IN =====
+async function checkin() {
+  try {
+    const j = await api('/api/earn/checkin', {});
+    USER = j.user;
+    pushTx('Daily check-in (streak ' + j.streak + ')', j.points);
+    refreshUI();
+    toast('🔥 +' + j.points + ' pts! (Streak: ' + j.streak + ')');
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== EARN: OFFER (CPA) =====
+function openOffer(id) {
+  // Open offerwall link
+  if (SETTINGS.offerWallLink && SETTINGS.offerWallLink.includes('http')) {
+    window.open(SETTINGS.offerWallLink, '_blank');
+  } else {
+    window.open('https://www.profitabledisplaynetwork.com/u9dq9z4x?key=YOUR_KEY_HERE', '_blank');
+  }
+  // After user returns, they can manually claim (admin verifies via postback in real setup)
+  setTimeout(async () => {
+    try {
+      const j = await api('/api/earn/offer', { offerId: id });
+      USER = j.user;
+      pushTx('Completed offer', j.points);
+      refreshUI();
+      toast('✅ +' + j.points + ' pts for completing the offer!');
+    } catch (e) { toast('Offer not confirmed yet. Complete the steps and try again.'); }
+  }, 5000);
+}
+
+// ===== EARN: SOCIAL =====
+async function doSocial(type) {
+  const links = {
+    yt: 'https://youtube.com/@ucbounty',
+    ig: 'https://instagram.com/ucbounty',
+    tg: 'https://t.me/ucbounty',
+    wh: 'https://whatsapp.com/channel/ucbounty'
+  };
+  window.open(links[type], '_blank');
+  setTimeout(async () => {
+    try {
+      const j = await api('/api/earn/offer', { offerId: 'social_' + type });
+      USER = j.user;
+      pushTx('Social: ' + type, j.points);
+      refreshUI();
+      toast('✅ +' + j.points + ' pts!');
+    } catch (e) { toast('Not confirmed yet. Try again after following.'); }
+  }, 3000);
+}
+
+// ===== REDEEM FLOW =====
+async function openRedeem() {
+  if (USER.points < SETTINGS.minPointsToRedeem) {
+    return toast('❌ Need ' + formatNum(SETTINGS.minPointsToRedeem - USER.points) + ' more points');
+  }
+  try {
+    const j = await apiGet('/api/redeem/status');
+    if (!j.canRedeem) {
+      // Show cooldown
+      if (j.cooldownRemaining > 0) {
+        startCooldownCountdown(j.cooldownRemaining);
+        document.getElementById('cooldownModal').classList.remove('hidden');
+        return;
+      }
+    }
+    // Show rating modal first
+    if (j.needsRating) {
+      openRating();
+    } else {
+      openPubgModal();
+    }
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== RATING =====
+let pickedStars = 0;
+function openRating() {
+  pickedStars = 0;
+  document.querySelectorAll('#starsRow .star').forEach(s => {
+    s.classList.remove('active');
+    s.textContent = '☆';
+  });
+  document.getElementById('ratingText').value = '';
+  document.getElementById('ratingModal').classList.remove('hidden');
+}
+document.querySelectorAll('#starsRow .star').forEach(s => {
+  s.addEventListener('click', () => {
+    pickedStars = parseInt(s.dataset.v);
+    document.querySelectorAll('#starsRow .star').forEach((st, i) => {
+      if (i < pickedStars) { st.classList.add('active'); st.textContent = '★'; }
+      else { st.classList.remove('active'); st.textContent = '☆'; }
+    });
+  });
+});
+async function submitRating() {
+  const txt = document.getElementById('ratingText').value.trim();
+  if (pickedStars !== 5) return toast('❌ 5-star rating required');
+  if (txt.length < 5) return toast('❌ Please leave positive feedback');
+  try {
+    await api('/api/redeem/rating', { stars: pickedStars, feedback: txt });
+    closeModal('ratingModal');
+    // Now check cooldown
+    const j = await apiGet('/api/redeem/status');
+    if (j.cooldownRemaining > 0 && !USER.premium) {
+      startCooldownCountdown(j.cooldownRemaining);
+      document.getElementById('cooldownModal').classList.remove('hidden');
+    } else {
+      openPubgModal();
+    }
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== COOLDOWN COUNTDOWN =====
+let cdInterval = null;
+function startCooldownCountdown(ms) {
+  const el = document.getElementById('cdClock');
+  function tick() {
+    const rem = Math.max(0, ms - Date.now() + (window._cdStart || Date.now()));
+    // Recalc: re-fetch to be safe
+    apiGet('/api/redeem/status').then(j => {
+      let s = Math.floor(j.cooldownRemaining / 1000);
+      if (s <= 0) { clearInterval(cdInterval); closeModal('cooldownModal'); openPubgModal(); return; }
+      const h = String(Math.floor(s / 3600)).padStart(2, '0');
+      const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const sec = String(s % 60).padStart(2, '0');
+      el.textContent = `${h}:${m}:${sec}`;
+    });
+  }
+  tick();
+  cdInterval = setInterval(tick, 1000);
+}
+function refreshCooldownBar() {
+  // Periodic refresh of user data
+  if (!USER) return;
+  if (Date.now() - (window._lastRefresh || 0) > 30000) {
+    window._lastRefresh = Date.now();
+    apiGet('/api/me').then(j => { USER = j.user; SETTINGS = j.settings; refreshUI(); }).catch(() => {});
+  }
+}
+
+// ===== PUBG ID =====
+function openPubgModal() {
+  document.getElementById('pubgInput').value = USER.pubgId || '';
+  document.getElementById('pubgModal').classList.remove('hidden');
+}
+async function submitRedeem() {
+  const pubgId = document.getElementById('pubgInput').value.trim();
+  if (!pubgId) return toast('❌ Enter your PUBG ID');
+  try {
+    const j = await api('/api/redeem/request', { pubgId });
+    USER = j.request && USER;
+    // Refresh user
+    const me = await apiGet('/api/me');
+    USER = me.user; SETTINGS = me.settings;
+    USER.pubgId = pubgId;
+    refreshUI();
+    closeModal('pubgModal');
+    document.getElementById('successMsg').textContent =
+      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted. We will transfer to PUBG ID ' + pubgId + ' within 24-48h.';
+    document.getElementById('successModal').classList.remove('hidden');
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ===== PREMIUM =====
+function openPremium() {
+  document.getElementById('premModal').classList.remove('hidden');
+}
+async function buyPremium() {
+  // In production: integrate Razorpay/Cashfree. For now: simulated admin activation.
+  closeModal('premModal');
+  toast('💎 Premium activation via UPI/Crypto. Contact admin on WhatsApp.');
+  window.open('https://wa.me/?text=Hi%2C%20I%20want%20UC%20Bounty%20Premium', '_blank');
+}
+
+// ===== REFERRAL =====
+function openReferral() {
+  const code = USER.username.toLowerCase().slice(0, 6) + USER.deviceId.slice(-4);
+  USER.referralCode = code;
+  const url = location.origin + '?ref=' + code;
+  if (navigator.share) {
+    navigator.share({ title: 'UC Bounty', text: 'Join me on UC Bounty and earn real UC!', url });
+  } else {
+    navigator.clipboard.writeText(url);
+    toast('📋 Link copied: ' + url);
+  }
+}
+function openHistory() {
+  switchTab('wallet');
+}
+function openSupport() {
+  window.open('https://wa.me/?text=Hi%2C%20I%20need%20help%20with%20UC%20Bounty', '_blank');
+}
+
+// ===== LEADERBOARD =====
+async function loadLeaderboard() {
+  try {
+    const j = await apiGet('/api/leaderboard');
+    const el = document.getElementById('leaderboard');
+    el.innerHTML = j.leaderboard.map((u, i) =>
+      `<div class="lb-row">
+        <span class="lb-rank ${i < 3 ? 'gold' : ''}">#${i + 1}</span>
+        <span class="lb-name">${u.premium ? '💎 ' : ''}${escape(u.username)}</span>
+        <span class="lb-pts">${formatNum(u.points)} pts</span>
+      </div>`
+    ).join('');
+  } catch (e) {}
+}
+function escape(s) { return String(s).replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;' }[c])); }
+
+// ===== TX LOG (local) =====
+function pushTx(source, pts) {
+  if (!USER.tx) USER.tx = [];
+  USER.tx.push({ s: source, p: pts, t: Date.now() });
+  if (USER.tx.length > 100) USER.tx = USER.tx.slice(-100);
+}
+
+// ===== MODAL =====
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
+});
+
+// ===== TOAST =====
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.add('hidden'), 3000);
+}

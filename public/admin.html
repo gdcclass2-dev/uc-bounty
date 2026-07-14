@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UC Bounty - Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.admin-wrap { padding: 20px; max-width: 900px; margin: 0 auto; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; text-align: center; }
+.stat-num { font-size: 32px; font-weight: 900; color: var(--orange); }
+.stat-label { font-size: 11px; color: var(--text-dim); letter-spacing: 1.5px; margin-top: 4px; }
+.admin-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.admin-section h3 { margin-bottom: 12px; }
+.row { display: flex; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.row:last-child { border: 0; }
+.row .label { flex: 0 0 120px; color: var(--text-dim); font-size: 12px; }
+.row input, .row select { flex: 1; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: var(--text); }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--text-dim); font-weight: 700; }
+.status-pending { color: var(--orange); }
+.status-paid { color: var(--green); }
+.status-rejected { color: var(--red); }
+.badge-p { background: var(--gold); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 10px; }
+.badge-b { background: var(--red); color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 10px; }
+.tabs-admin { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
+.tab-a { padding: 8px 16px; background: var(--card); border-radius: 8px; font-size: 13px; white-space: nowrap; }
+.tab-a.active { background: var(--orange); color: #fff; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-particles"></div>
+<div class="bg-vignette"></div>
+
+<!-- Login -->
+<div id="login" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:10">
+  <div class="auth-card" style="max-width:360px">
+    <h2 style="text-align:center;margin-bottom:20px">🔐 ADMIN LOGIN</h2>
+    <input id="adminPw" type="password" placeholder="Enter admin password" style="width:100%;padding:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;color:var(--text);margin-bottom:12px">
+    <button class="btn btn-primary btn-block" onclick="adminLogin()">LOGIN</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dash" style="display:none">
+<div class="admin-wrap">
+  <h1 style="font-size:24px;margin-bottom:6px">🎯 UC Bounty Admin</h1>
+  <p style="color:var(--text-dim);font-size:12px;margin-bottom:20px">Default password: <code>admin123</code> (change via settings)</p>
+
+  <div class="admin-grid" id="statsGrid"></div>
+
+  <div class="tabs-admin">
+    <button class="tab-a active" data-tab="redeems">Redeem Requests</button>
+    <button class="tab-a" data-tab="users">Users</button>
+    <button class="tab-a" data-tab="settings">Settings</button>
+    <button class="tab-a" data-tab="announce">Announce</button>
+  </div>
+
+  <!-- Redeems -->
+  <div class="tab-panel active" id="panel-redeems">
+    <div class="admin-section">
+      <h3>📥 Redeem Requests</h3>
+      <div style="overflow-x:auto"><table id="redeemTable">
+        <thead><tr><th>User</th><th>PUBG ID</th><th>UC</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div class="tab-panel" id="panel-users">
+    <div class="admin-section">
+      <h3>👥 Users (<span id="userCount">0</span>)</h3>
+      <div style="overflow-x:auto;max-height:60vh"><table id="userTable">
+        <thead><tr><th>Username</th><th>Points</th><th>PUBG ID</th><th>Premium</th><th>Banned</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="admin-section">
+      <h3>⚙️ Rewards Config</h3>
+      <div class="row"><span class="label">Points per UC</span><input id="sPointsPerUc" type="number"></div>
+      <div class="row"><span class="label">UC per Redeem</span><input id="sUcPerRedeem" type="number"></div>
+      <div class="row"><span class="label">Min Points to Redeem</span><input id="sMin" type="number"></div>
+      <div class="row"><span class="label">Free Cooldown (h)</span><input id="sCdFree" type="number"></div>
+      <div class="row"><span class="label">Premium Cooldown (h)</span><input id="sCdPrem" type="number"></div>
+      <div class="row"><span class="label">Daily Ad Limit</span><input id="sAdLimit" type="number"></div>
+      <div class="row"><span class="label">Signup Bonus</span><input id="sSignup" type="number"></div>
+      <h3 style="margin-top:20px">🛡️ Anti-Fraud Config</h3>
+      <div class="row"><span class="label">Ad Watch (sec)</span><input id="sAdWatch" type="number"></div>
+      <div class="row"><span class="label">Offer Wait (sec)</span><input id="sOfferWait" type="number"></div>
+      <div class="row"><span class="label">Ad Cooldown (sec)</span><input id="sAdCool" type="number"></div>
+      <div class="row"><span class="label">Quiz/Question (s)</span><input id="sQuizCool" type="number"></div>
+      <div class="row"><span class="label">Quiz Q's/Day</span><input id="sQuizDay" type="number"></div>
+      <h3 style="margin-top:20px">💰 Monetization Links</h3>
+      <div class="row"><span class="label">Adsterra Link</span><input id="sAdsterra" type="text"></div>
+      <div class="row"><span class="label">Monetag Link</span><input id="sMonetag" type="text"></div>
+      <div class="row"><span class="label">OfferWall Link</span><input id="sOfferwall" type="text"></div>
+      <h3 style="margin-top:20px">📣 Social Links</h3>
+      <div class="row"><span class="label">YouTube URL</span><input id="sYt" type="text" placeholder="https://youtube.com/@yourchannel"></div>
+      <div class="row"><span class="label">Instagram URL</span><input id="sIg" type="text" placeholder="https://instagram.com/yourpage"></div>
+      <div class="row"><span class="label">Telegram URL</span><input id="sTg" type="text" placeholder="https://t.me/yourchannel"></div>
+      <div class="row"><span class="label">WhatsApp URL</span><input id="sWh" type="text" placeholder="https://whatsapp.com/channel/..."></div>
+      <button class="btn btn-gold btn-block" onclick="saveSettings()">SAVE SETTINGS</button>
+    </div>
+  </div>
+
+  <!-- Announce -->
+  <div class="tab-panel" id="panel-announce">
+    <div class="admin-section">
+      <h3>📢 Send Announcement</h3>
+      <textarea id="annMsg" placeholder="Your message to all users..." style="width:100%;min-height:100px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);margin-bottom:12px"></textarea>
+      <button class="btn btn-gold btn-block" onclick="sendAnnounce()">SEND TO ALL</button>
+    </div>
+    <div class="admin-section">
+      <h3>🔐 Change Admin Password</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">⚠️ After changing, you must login again with the new password.</p>
+      <div class="row"><span class="label">Current PW</span><input id="pwOld" type="password" placeholder="Current password"></div>
+      <div class="row"><span class="label">New PW</span><input id="pwNew" type="password" placeholder="New password (min 8 chars)"></div>
+      <div class="row"><span class="label">Confirm</span><input id="pwConfirm" type="password" placeholder="Type new password again"></div>
+      <button class="btn btn-primary btn-block" onclick="changeAdminPw()">CHANGE PASSWORD</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+let ADMIN_PW = sessionStorage.getItem('ucb_admin') || '';
+
+document.getElementById('adminPw').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+
+async function adminLogin() {
+  const pw = document.getElementById('adminPw').value;
+  if (!pw) return alert('Enter password');
+  try {
+    const r = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    if (!r.ok) throw new Error('Wrong password');
+    ADMIN_PW = pw;
+    sessionStorage.setItem('ucb_admin', pw);
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('dash').style.display = 'block';
+    loadAll();
+  } catch (e) { alert('❌ ' + e.message); }
+}
+
+async function adminFetch(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-password': ADMIN_PW },
+    body: JSON.stringify(body || {})
+  });
+  return r.json();
+}
+
+document.querySelectorAll('.tab-a').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab-a').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('panel-' + b.dataset.tab).classList.add('active');
+}));
+
+async function loadAll() {
+  await Promise.all([loadStats(), loadRedeems(), loadUsers(), loadSettings()]);
+  setInterval(loadRedeems, 15000); // auto-refresh
+}
+
+async function loadStats() {
+  const j = await adminFetch('/api/admin/stats');
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${j.totalUsers}</div><div class="stat-label">Total Users</div></div>
+    <div class="stat-card"><div class="stat-num">${j.activeUsers}</div><div class="stat-label">Active Today</div></div>
+    <div class="stat-card"><div class="stat-num">${j.premiumUsers}</div><div class="stat-label">Premium</div></div>
+    <div class="stat-card"><div class="stat-num">${j.pendingRedeems}</div><div class="stat-label">Pending UC</div></div>
+    <div class="stat-card"><div class="stat-num">${j.totalUCPaid}</div><div class="stat-label">UC Paid</div></div>
+  `;
+}
+
+async function loadRedeems() {
+  const j = await adminFetch('/api/admin/redeems');
+  const tbody = document.querySelector('#redeemTable tbody');
+  tbody.innerHTML = j.redeems.map(r => `
+    <tr>
+      <td>${r.username}</td>
+      <td><b>${r.pubgId}</b></td>
+      <td>${r.uc} ${r.premium ? '💎' : ''}</td>
+      <td><span class="status-${r.status}">${r.status.toUpperCase()}</span></td>
+      <td>${new Date(r.createdAt).toLocaleString()}</td>
+      <td>
+        ${r.status === 'pending' ? `
+          <button class="btn btn-sm" onclick="updRedeem('${r.id}','paid')">✅ Paid</button>
+          <button class="btn btn-sm" style="background:var(--red)" onclick="updRedeem('${r.id}','rejected')">❌</button>
+        ` : '-'}
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No requests</td></tr>';
+}
+
+async function updRedeem(id, status) {
+  if (!confirm('Mark as ' + status + '?')) return;
+  await adminFetch('/api/admin/redeem/update', { id, status });
+  loadAll();
+}
+
+async function loadUsers() {
+  const j = await adminFetch('/api/admin/users');
+  document.getElementById('userCount').textContent = j.users.length;
+  const tbody = document.querySelector('#userTable tbody');
+  tbody.innerHTML = j.users.map(u => `
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.points}</td>
+      <td><input value="${u.pubgId||''}" id="pubg-${u.deviceId}" style="width:120px;padding:4px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;color:var(--text)"></td>
+      <td>${u.premium ? '<span class="badge-p">YES</span>' : 'no'}</td>
+      <td>${u.banned ? '<span class="badge-b">YES</span>' : 'no'}</td>
+      <td>
+        <button class="btn btn-sm" onclick="toggleUser('${u.deviceId}','premium',${!u.premium})">${u.premium?'Remove P':'Add P'}</button>
+        <button class="btn btn-sm" style="background:var(--red)" onclick="toggleUser('${u.deviceId}','banned',${!u.banned})">${u.banned?'Unban':'Ban'}</button>
+        <button class="btn btn-sm" style="background:var(--green)" onclick="setPubg('${u.deviceId}')">Save ID</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function toggleUser(id, key, val) {
+  await adminFetch('/api/admin/user/update', { deviceId: id, [key]: val });
+  loadAll();
+}
+async function setPubg(id) {
+  const pubgId = document.getElementById('pubg-' + id).value.trim();
+  await adminFetch('/api/admin/user/update', { deviceId: id, pubgId });
+  alert('✅ Saved');
+}
+
+async function loadSettings() {
+  const j = await adminFetch('/api/admin/settings');
+  const s = j.settings;
+  document.getElementById('sPointsPerUc').value = s.pointsPerUc;
+  document.getElementById('sUcPerRedeem').value = s.ucPerRedeem;
+  document.getElementById('sMin').value = s.minPointsToRedeem;
+  document.getElementById('sCdFree').value = s.freeRedeemCooldownHours;
+  document.getElementById('sCdPrem').value = s.premiumRedeemCooldownHours;
+  document.getElementById('sAdLimit').value = s.dailyAdLimit;
+  document.getElementById('sSignup').value = s.signupBonus;
+  if (document.getElementById('sAdWatch')) document.getElementById('sAdWatch').value = s.adWatchSeconds || 10;
+  if (document.getElementById('sOfferWait')) document.getElementById('sOfferWait').value = s.offerWaitSeconds || 30;
+  if (document.getElementById('sAdCool')) document.getElementById('sAdCool').value = s.adCooldownSeconds || 20;
+  if (document.getElementById('sQuizCool')) document.getElementById('sQuizCool').value = s.quizCooldownSeconds || 30;
+  if (document.getElementById('sQuizDay')) document.getElementById('sQuizDay').value = s.quizPerDay || 5;
+  document.getElementById('sAdsterra').value = s.adsterraLink || '';
+  document.getElementById('sMonetag').value = s.monetagLink || '';
+  document.getElementById('sOfferwall').value = s.offerWallLink || '';
+  document.getElementById('sYt').value = s.ytLink || '';
+  document.getElementById('sIg').value = s.igLink || '';
+  document.getElementById('sTg').value = s.tgLink || '';
+  document.getElementById('sWh').value = s.whLink || '';
+}
+
+async function saveSettings() {
+  const body = {
+    pointsPerUc: parseInt(document.getElementById('sPointsPerUc').value),
+    ucPerRedeem: parseInt(document.getElementById('sUcPerRedeem').value),
+    minPointsToRedeem: parseInt(document.getElementById('sMin').value),
+    freeRedeemCooldownHours: parseFloat(document.getElementById('sCdFree').value),
+    premiumRedeemCooldownHours: parseFloat(document.getElementById('sCdPrem').value),
+    dailyAdLimit: parseInt(document.getElementById('sAdLimit').value),
+    signupBonus: parseInt(document.getElementById('sSignup').value),
+    adWatchSeconds: parseInt(document.getElementById('sAdWatch').value) || 10,
+    offerWaitSeconds: parseInt(document.getElementById('sOfferWait').value) || 30,
+    adCooldownSeconds: parseInt(document.getElementById('sAdCool').value) || 20,
+    quizCooldownSeconds: parseInt(document.getElementById('sQuizCool').value) || 30,
+    quizPerDay: parseInt(document.getElementById('sQuizDay').value) || 5,
+    adsterraLink: document.getElementById('sAdsterra').value,
+    monetagLink: document.getElementById('sMonetag').value,
+    offerWallLink: document.getElementById('sOfferwall').value,
+    ytLink: document.getElementById('sYt').value,
+    igLink: document.getElementById('sIg').value,
+    tgLink: document.getElementById('sTg').value,
+    whLink: document.getElementById('sWh').value
+  };
+  await adminFetch('/api/admin/settings', body);
+  alert('✅ Settings saved');
+}
+
+async function sendAnnounce() {
+  const msg = document.getElementById('annMsg').value.trim();
+  if (!msg) return alert('Enter a message');
+  await adminFetch('/api/admin/announce', { message: msg });
+  document.getElementById('annMsg').value = '';
+  alert('📢 Sent to all users');
+}
+
+async function changeAdminPw() {
+  const old = document.getElementById('pwOld').value;
+  const neu = document.getElementById('pwNew').value;
+  const conf = document.getElementById('pwConfirm').value;
+  if (!old || !neu || !conf) return alert('Fill all 3 fields');
+  if (neu.length < 8) return alert('New password must be at least 8 characters');
+  if (neu !== conf) return alert('New password and confirm do not match');
+  try {
+    const r = await fetch('/api/admin/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': ADMIN_PW },
+      body: JSON.stringify({ oldPassword: old, newPassword: neu })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Failed');
+    alert('✅ Password changed! Please login again.');
+    sessionStorage.removeItem('ucb_admin');
+    location.reload();
+  } catch (e) { alert('❌ ' + e.message); }
+}
+
+if (ADMIN_PW) {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  loadAll();
+}
+</script>
+</body>
+</html>
