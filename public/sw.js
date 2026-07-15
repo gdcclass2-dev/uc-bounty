@@ -1,5 +1,5 @@
 // Free UC Earner service worker - clean offline cache (no ads)
-const CACHE = 'uc-bounty-v21';
+const CACHE = 'uc-bounty-v22';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/admin.html'];
 
 self.addEventListener('install', (e) => {

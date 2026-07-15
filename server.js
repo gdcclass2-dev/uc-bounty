@@ -516,7 +516,19 @@ app.post('/api/earn/quiz/answer', auth, (req, res) => {
   const q = bank[idx];
   if (!q) return res.status(400).json({ error: 'Invalid question' });
   const opts = q.options || q.opts || [];
-  const correct = opts[picked] === q.answer;
+  // Robust check: handle both text and index answer formats
+let correct = false;
+if (typeof q.answer === 'number' && q.answer >= 0 && q.answer < opts.length) {
+  // Index-based answer
+  correct = picked === q.answer;
+} else {
+  // Text-based answer (compare text)
+  correct = String(opts[picked] || '').trim() === String(q.answer || '').trim();
+  // Fallback: if text didn't match, maybe answer is still an index
+  if (!correct && /^\d+$/.test(String(q.answer))) {
+    correct = picked === parseInt(String(q.answer));
+  }
+}
   u.quizDoneToday++;
   u.quizAnsweredToday.push({ qHash, t: now });
   const pts = correct ? (u.premium ? 4 : 2) : (u.premium ? 1 : 0); // 0 for wrong (free), 1 for premium

@@ -259,6 +259,7 @@ function _ctx() {
 }
 function playTone(freq, dur, type, vol) {
   if (window._sfxMuted) return;
+  if (!window._allowSpinOnly) return; // KILL all non-spin sounds
   const c = _ctx(); if (!c) return;
   try {
     const osc = c.createOscillator();
@@ -326,6 +327,7 @@ function sfxParty() {
 let _spinTickInterval = null;
 function startSpinSound() {
   if (window._sfxMuted) return;
+  window._allowSpinOnly = true; // ALLOW spin sound only
   // Tick-tick-tick accelerating then slowing down
   let tickCount = 0;
   const tick = () => {
@@ -345,6 +347,7 @@ function stopSpinSound() {
   if (_spinTickInterval) { clearTimeout(_spinTickInterval); _spinTickInterval = null; }
   // Final "ding" when wheel stops
   playTone(1200, 0.15, 'sine', 0.20);
+  window._allowSpinOnly = false; // BLOCK all sounds again
 }
 function toggleSfx() {
   window._sfxMuted = !window._sfxMuted;
@@ -1280,11 +1283,10 @@ function clickInFeedAd() {
 // ===== STOP SOUNDS WHEN APP GOES TO BACKGROUND =====
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    // Stop any pending spin sounds
-    if (typeof stopSpinSound === 'function') stopSpinSound();
-    // Close AudioContext to silence all tones
+    // KILL ALL SOUNDS when leaving app
+    window._allowSpinOnly = false;
+    try { if (typeof stopSpinSound === 'function') stopSpinSound(); } catch(e) {}
     try { if (_audioCtx) { _audioCtx.close(); _audioCtx = null; } } catch(e) {}
-    // Clear all pending setTimeout for sounds
     try { clearTimeout(_spinTickInterval); _spinTickInterval = null; } catch(e) {}
   }
 });
