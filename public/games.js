@@ -341,6 +341,7 @@ async function claimGameReward(pkg, name, points) {
 
 function openMonetagOffers() {
   // Opens Monetag offerwall (real CPA offers - real revenue!)
-  window.open((typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1) ? SETTINGS.monetagLink : 'https://al5sm.com/pfe/current/tag.min.js?z=11289197', '_blank');
+  const _adUrl = (typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1 && SETTINGS.monetagLink.indexOf('javascript') === -1) ? SETTINGS.monetagLink : 'https://omg10.com/4/11286726';
+  window.open(_adUrl, '_blank');
   toast('💰 Real offers = real money! Complete to earn big');
 }

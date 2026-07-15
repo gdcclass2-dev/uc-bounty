@@ -215,7 +215,9 @@ async function watchAd() {
   content.innerHTML = '<div style="font-size:50px;margin-bottom:8px">🎬</div><p style="color:#FFD700;font-weight:bold">Sponsor ad opened in new tab</p><p style="color:#00E5FF;font-size:13px">Watch it fully, return here and wait for the timer.</p>';
 
   // Open Monetag in new tab (ONCE per Watch Ad) - user returns and waits for our timer
-  try { window.open(SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1 ? SETTINGS.monetagLink : 'https://al5sm.com/pfe/current/tag.min.js?z=11289197', '_blank'); } catch(e) {}
+  // Use the real Monetag on-click URL (omg10.com = direct ad, opens in new tab with actual ad)
+  const _adUrl = (typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1 && SETTINGS.monetagLink.indexOf('javascript') === -1) ? SETTINGS.monetagLink : 'https://omg10.com/4/11286726';
+  try { window.open(_adUrl, '_blank'); } catch(e) {}
   fill.style.width = '0%';
   claim.classList.add('hidden');
   let elapsed = 0;
