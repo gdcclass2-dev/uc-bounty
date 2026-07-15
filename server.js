@@ -326,6 +326,21 @@ app.get('/api/challenge/status', auth, (req, res) => {
   });
 });
 
+app.post('/api/pwa/install-bonus', auth, (req, res) => {
+  const u = req.user;
+  // Check if already claimed
+  if (u.pwaInstallBonusClaimed) return res.json({ ok: false, error: 'Bonus already claimed' });
+  // Check minimum session (must have signed up > 10 sec ago)
+  if (Date.now() - (u.createdAt || 0) < 10000) return res.json({ ok: false, error: 'Too soon after signup' });
+  const bonus = 100;
+  u.points = (u.points || 0) + bonus;
+  u.pwaInstallBonusClaimed = true;
+  u.lastActive = Date.now();
+  addTx(u, { type: 'pwa_install_bonus', pts: bonus, note: 'PWA install bonus' });
+  saveDB();
+  res.json({ ok: true, bonus, user: { username: u.username, points: u.points } });
+});
+
 app.get('/api/me', auth, (req, res) => {
   req.user.lastActive = Date.now();
   saveDB();
