@@ -139,11 +139,27 @@ function getDevice(req) {
   return req.headers['x-device-id'] || req.body?.deviceId || 'unknown';
 }
 function auth(req, res, next) {
-  const token = req.headers['authorization']?.replace('Bearer ', '') || req.body?.token;
-  const deviceId = db.sessions[token];
+  // Try token first (Bearer or body)
+  let token = req.headers['authorization']?.replace('Bearer ', '') || req.body?.token;
+  let deviceId = token ? db.sessions[token] : null;
+  // FALLBACK: if no valid token, accept x-device-id header (permanent login)
+  // This allows users to stay logged in forever on the same device/browser
+  if (!deviceId) {
+    const deviceIdHeader = req.headers['x-device-id'] || req.body?.deviceId;
+    if (deviceIdHeader && db.users[deviceIdHeader]) {
+      deviceId = deviceIdHeader;
+      // Auto-create a session token for next time
+      const newToken = crypto.randomBytes(24).toString('hex');
+      db.sessions[newToken] = deviceId;
+      req._newToken = newToken;  // tell handler to send it back
+      saveDB();
+    }
+  }
   if (!deviceId || !db.users[deviceId]) return res.status(401).json({ error: 'Unauthorized' });
   req.user = db.users[deviceId];
   req.deviceId = deviceId;
+  // Add helper to send new token
+  res.locals.sendNewToken = () => req._newToken;
   next();
 }
 function adminAuth(req, res, next) {

@@ -38,9 +38,20 @@ async function api(path, body = {}, needAuth = true) {
   if (needAuth && TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
   try {
     const r = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+    // Server may send new token if we logged in via deviceId fallback
+    const newTok = r.headers.get('x-new-token');
+    if (newTok) {
+      TOKEN = newTok;
+      try { localStorage.setItem('ucb_token', newTok); } catch(e) {}
+    }
     const j = await r.json();
     if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
     if (!r.ok) throw new Error(j.error || 'API error');
+    // Save token from response body too (fallback)
+    if (j && j.token) {
+      TOKEN = j.token;
+      try { localStorage.setItem('ucb_token', j.token); } catch(e) {}
+    }
     return j;
   } catch (e) {
     if (e.message.includes('fetch')) throw new Error('Network error. Check connection.');
@@ -53,9 +64,20 @@ async function apiGet(path) {
   if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
   try {
     const r = await fetch(path, { headers });
+    // Save new token if server sent one (auto-login)
+    const newTok = r.headers.get('x-new-token');
+    if (newTok) {
+      TOKEN = newTok;
+      try { localStorage.setItem('ucb_token', newTok); } catch(e) {}
+    }
     if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'API error');
+    // Save token from response body
+    if (j && j.token) {
+      TOKEN = j.token;
+      try { localStorage.setItem('ucb_token', j.token); } catch(e) {}
+    }
     return j;
   } catch (e) {
     if (e.message.includes('fetch')) throw new Error('Network error');
@@ -72,6 +94,7 @@ function showScreen(id) {
 // ===== SPLASH → AUTH/APP =====
 window.addEventListener('load', () => {
   setTimeout(async () => {
+    // 1) If we have a token, try to use it
     if (TOKEN) {
       try {
         const j = await apiGet('/api/me');
@@ -80,6 +103,10 @@ window.addEventListener('load', () => {
         return;
       } catch (e) { doLogout(); }
     }
+    // 2) No token? Try AUTO-LOGIN with just deviceId (permanent login!)
+    const ok = await tryAutoLogin();
+    if (ok) return;
+    // 3) No saved user on this device - show signup
     showScreen('auth');
   }, 1500);
 });
@@ -100,6 +127,29 @@ document.getElementById('authSubmit').addEventListener('click', async () => {
     toast('🎯 Welcome, ' + USER.username + '! +' + SETTINGS.signupBonus + ' bonus');
   } catch (e) { toast('❌ ' + e.message); }
 });
+
+// PERMANENT LOGIN: If device already registered, auto-login on page load
+async function tryAutoLogin() {
+  if (TOKEN) return false;  // already have token, no need
+  try {
+    // Call /api/me with just deviceId header (no token)
+    const r = await fetch('/api/me', { headers: { 'x-device-id': DEVICE_ID } });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.user) {
+        TOKEN = j.token || '';  // server may send new token
+        if (TOKEN) localStorage.setItem('ucb_token', TOKEN);
+        USER = j.user;
+        SETTINGS = j.settings;
+        initApp();
+        toast('👋 Welcome back, ' + USER.username + '!');
+        sfxReward();
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
 function doLogout() {
   TOKEN = null; USER = null;
   localStorage.removeItem('ucb_token');
