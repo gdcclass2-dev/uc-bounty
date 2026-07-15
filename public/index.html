@@ -577,6 +577,43 @@
 
 <!-- Monetag In-Page Push (small top notification) -->
 <script src="https://al5sm.com/pfe/current/tag.min.js?z=11289197" data-zone="11289197" data-ct="2"></script>
+<!-- Mega Goal Popup (shows when user has enough to redeem) -->
+<div class="modal hidden" id="megaGoalModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;text-align:center;max-width:380px;padding:18px">
+    <div style="font-size:50px;margin:6px 0;animation:bounce 1s infinite">🎯</div>
+    <h2 style="color:#FFD700;margin:4px 0;font-size:20px">MEGA GOAL UNLOCKED!</h2>
+    <p style="color:#aaa;font-size:12px;margin:4px 0 10px 0">You've hit <span style="color:#00ff88;font-weight:bold">6,000 pts</span> - you can redeem now!</p>
+
+    <!-- Current option -->
+    <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:10px;margin:8px 0">
+      <p style="color:#00E5FF;font-size:11px;margin:0 0 4px 0">REDEEM NOW</p>
+      <p style="color:#fff;font-weight:bold;font-size:22px;margin:0">300 UC</p>
+      <p style="color:#888;font-size:10px;margin:2px 0 0 0">6,000 pts · standard</p>
+    </div>
+
+    <p style="color:#aaa;font-size:13px;margin:10px 0 6px 0">— OR KEEP EARNING FOR —</p>
+
+    <!-- MEGA goal option -->
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,107,107,0.15));border:2px solid #FFD700;border-radius:12px;padding:14px;margin:8px 0;position:relative;animation:pulse 3s infinite">
+      <p style="position:absolute;top:-10px;right:8px;background:#FFD700;color:#000;font-size:10px;font-weight:bold;padding:3px 8px;border-radius:10px">⭐ 5X BIGGER</p>
+      <p style="color:#FFD700;font-size:11px;margin:0 0 4px 0;font-weight:bold">MEGA PRIZE</p>
+      <p style="color:#fff;font-weight:bold;font-size:18px;margin:0 0 6px 0">PUBG X-Suit</p>
+      <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:0">OR 100,000 UC! 🎰</p>
+      <div style="background:rgba(0,0,0,0.4);border-radius:8px;height:14px;overflow:hidden;position:relative;margin-top:10px">
+        <div id="megaGoalProgressBar" style="background:linear-gradient(90deg,#FFD700,#00ff88,#ff6b6b);height:100%;width:0%;transition:width 0.6s ease"></div>
+        <span id="megaGoalPct" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#000;font-weight:bold;font-size:10px">0%</span>
+      </div>
+      <p style="color:#aaa;font-size:11px;margin:6px 0 0 0"><span id="megaGoalPoints">0</span> / 30,000 pts</p>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeMegaGoalModal()">REDEEM 300 UC NOW</button>
+      <button class="btn btn-gold" style="flex:1" onclick="closeMegaGoalModal();switchTab('earn')">🎯 KEEP EARNING</button>
+    </div>
+    <p style="color:#888;font-size:10px;margin:8px 0 0 0">💡 You can always redeem now, or keep going for the MEGA prize!</p>
+  </div>
+</div>
+
 <!-- Daily Challenge Modal -->
 <div class="modal hidden" id="challengeModal">
   <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;text-align:center;max-width:340px">

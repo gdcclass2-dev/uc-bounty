@@ -237,6 +237,61 @@ function toggleSfx() {
   if (!window._sfxMuted) sfxClick();
 }
 
+// ===== MEGA GOAL POPUP =====
+let _megaGoalShown = false;
+async function checkMegaGoal() {
+  if (!USER || !USER.points) return;
+  if (USER.points < (SETTINGS.minPointsToRedeem || 6000)) return;  // not eligible yet
+  // Show popup at most once per session
+  if (_megaGoalShown) return;
+  try {
+    const r = await apiGet('/api/redeem/status');
+    if (!r || !r.megaGoal) return;
+    if (r.megaGoal.reached) {
+      // 🎉 MEGA GOAL REACHED! Show celebration
+      showMegaGoalReached(r.megaGoal);
+    } else {
+      // Show goal popup to motivate
+      showMegaGoalModal(r.megaGoal, USER.points);
+    }
+  } catch(e) {}
+}
+function showMegaGoalModal(goal, currentPts) {
+  _megaGoalShown = true;
+  const pct = Math.min(100, Math.round((currentPts / goal.points) * 100));
+  document.getElementById('megaGoalProgressBar').style.width = pct + '%';
+  document.getElementById('megaGoalPct').textContent = pct + '%';
+  document.getElementById('megaGoalPoints').textContent = currentPts.toLocaleString();
+  document.getElementById('megaGoalModal').classList.remove('hidden');
+  sfxLevelUp();
+}
+function showMegaGoalReached(goal) {
+  _megaGoalShown = true;
+  // Override modal with "REACHED!" message
+  const m = document.getElementById('megaGoalModal');
+  m.querySelector('.modal-box').innerHTML = `
+    <div style="font-size:80px;margin:6px 0">🎉</div>
+    <h2 style="color:#00ff88;margin:4px 0;font-size:24px">MEGA GOAL REACHED!</h2>
+    <p style="color:#fff;font-size:15px;margin:8px 0">You earned <span style="color:#FFD700;font-weight:bold">${goal.points.toLocaleString()} pts</span>! 🏆</p>
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(0,255,136,0.2));border:2px solid #00ff88;border-radius:12px;padding:14px;margin:12px 0">
+      <p style="color:#FFD700;font-size:11px;margin:0 0 6px 0;font-weight:bold">🎁 CLAIM YOUR REWARD</p>
+      <p style="color:#fff;font-weight:bold;font-size:18px;margin:0 0 4px 0">PUBG X-Suit</p>
+      <p style="color:#00ff88;font-weight:bold;font-size:20px;margin:0">OR 100,000 UC! 💎</p>
+    </div>
+    <p style="color:#aaa;font-size:12px;margin:8px 0">Contact support to claim your prize!</p>
+    <button class="btn btn-gold btn-block" onclick="closeMegaGoalModal()">AWESOME!</button>
+  `;
+  m.classList.remove('hidden');
+  if (typeof confettiBurst === 'function') confettiBurst();
+  setTimeout(() => confettiBurst(), 500);
+  setTimeout(() => confettiBurst(), 1000);
+  sfxLevelUp();
+}
+function closeMegaGoalModal() {
+  document.getElementById('megaGoalModal').classList.add('hidden');
+  try { localStorage.setItem('ucb_megaGoalDismissed', String(Date.now())); } catch(e) {}
+}
+
 // ===== DAILY CHALLENGE =====
 let CHALLENGE = { adsToday: 0, target: 100, bonus: 1000, completed: false, progress: 0 };
 async function refreshChallenge() {

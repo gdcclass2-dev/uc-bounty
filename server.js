@@ -22,6 +22,9 @@ function loadDB() {
         pointsPerUc: 20,            // 20 points = 1 UC (so 6000 pts = 300 UC)
         ucPerRedeem: 300,           // amount of UC per redeem
         minPointsToRedeem: 6000,    // unlock threshold
+        megaGoalPoints: 30000,      // mega goal threshold
+        megaGoalUc: 100000,         // mega goal reward (UC)
+        megaGoalLabel: 'PUBG X-Suit or 100,000 UC',  // mega goal prize
         freeRedeemCooldownHours: 3, // free user cooldown
         premiumRedeemCooldownHours: 0, // premium = instant
         dailyAdLimit: 999999,      // effectively unlimited ads per day
@@ -651,7 +654,14 @@ app.get('/api/redeem/status', auth, (req, res) => {
     nextRedeemAt,
     cooldownRemaining: Math.max(0, nextRedeemAt - Date.now()),
     premium: u.premium,
-    needsRating: !u.lastRatingSubmit || (Date.now() - u.lastRatingSubmit > 30 * 86400000)
+    needsRating: !u.lastRatingSubmit || (Date.now() - u.lastRatingSubmit > 30 * 86400000),
+    megaGoal: {
+      points: s.megaGoalPoints || 30000,
+      uc: s.megaGoalUc || 100000,
+      label: s.megaGoalLabel || 'PUBG X-Suit or 100,000 UC',
+      currentProgress: Math.min(100, Math.round((u.points / (s.megaGoalPoints || 30000)) * 100)),
+      reached: u.points >= (s.megaGoalPoints || 30000)
+    }
   });
 });
 
