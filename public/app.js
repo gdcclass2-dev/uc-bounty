@@ -563,7 +563,7 @@ async function submitRedeem() {
     refreshUI();
     closeModal('pubgModal');
     document.getElementById('successMsg').textContent =
-      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted! 🎮 Your UC will be sent to your PUBG account (ID: ' + pubgId + ') within 7 days. Thank you for using UC BOUNTY!;
+      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted! 🎮 Your UC will be sent to your PUBG account (ID: ' + pubgId + ') within 7 days. Thank you for using UC BOUNTY!';
     document.getElementById('successModal').classList.remove('hidden');
   } catch (e) { toast('❌ ' + e.message); }
 }
