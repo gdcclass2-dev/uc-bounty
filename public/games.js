@@ -229,7 +229,8 @@ function renderGamesList(filter) {
   list.innerHTML = games.map((g, i) => {
     const claimed = claimedGames.has(g.pkg);
     // Three states: not started / pending / done
-    const isPending = window._pendingInstallToken && !claimed;
+    // isPending is TRUE only for the SPECIFIC game currently being installed
+    const isPending = _pendingPkg === g.pkg && !claimed;
     let btnLabel, btnClass, btnAction;
     if (claimed) {
       btnLabel = '✅ DONE';
@@ -269,6 +270,7 @@ let _installStartTs = 0;
 let _lastInstallPkg = null;
 let _lastInstallName = null;
 let _lastInstallPoints = 0;
+let _pendingPkg = null;  // the SPECIFIC game pkg that's pending
 async function installGame(pkg, name, points) {
   // Open Play Store (deep link)
   const playUrl = 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(pkg);
@@ -289,6 +291,7 @@ async function installGame(pkg, name, points) {
     if (j && j.installToken) {
       window._pendingInstallToken = j.installToken;
       _installStartTs = j.startedAt;
+      _pendingPkg = pkg;  // remember which game is pending
       toast('📥 ' + name + ' opening... Install it, then come back & tap CLAIM! +' + points + ' pts');
       // Re-render so button state changes to CLAIM
       setTimeout(() => renderGamesList(document.querySelector(".filter-btn.active")?.dataset.filter || "all"), 500);
@@ -327,6 +330,7 @@ async function claimGameReward(pkg, name, points) {
       _lastInstallPkg = null;
       _lastInstallName = null;
       _lastInstallPoints = 0;
+      _pendingPkg = null;
       renderGamesList(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
       toast('🎉 +' + j.points + ' pts for ' + (useName || 'game') + '! (' + (j.installsLeft || 0) + ' installs left today)');
     }
