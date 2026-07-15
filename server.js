@@ -26,7 +26,7 @@ function loadDB() {
         premiumRedeemCooldownHours: 0, // premium = instant
         dailyAdLimit: 50,           // max ads per day per user
         signupBonus: 50,            // free points on signup
-        adWatchSeconds: 10,         // required seconds to fully watch an ad
+        adWatchSeconds: 5,         // required seconds to fully watch an ad
         offerWaitSeconds: 30,       // required seconds before offer can be claimed
         adCooldownSeconds: 20,      // must wait this many seconds between ads
         quizCooldownSeconds: 30,    // per-question cooldown
@@ -34,7 +34,7 @@ function loadDB() {
         adminPassword: '@663629$',  // CHANGE THIS in admin panel - your secret password
         adsterraLink: 'https://www.profitabledisplaynetwork.com/xxxx',
         monetagLink: 'https://otieu.com/4/xxxx',
-        offerWallLink: 'https://www.profitabledisplaynetwork.com/yyyy',
+        offerWallLink: 'https://al5sm.com/click',
         announcements: [],
         // 30-QUESTION PUBG QUIZ BANK (admin-tunable)
         quizQuestions: [

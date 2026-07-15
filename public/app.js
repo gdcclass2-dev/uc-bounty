@@ -193,7 +193,7 @@ function refreshWallet() {
 let adState = { adToken: null, startedAt: 0, totalSeconds: 10 };
 async function watchAd() {
   // 5-minute session check (no ads for first 5 min of using the app)
-  const SESSION_DELAY_MS = 5 * 60 * 1000;
+  const SESSION_DELAY_MS = 0;
   const sessionStart = window._ucSessionStart || (window._ucSessionStart = Date.now());
   if (Date.now() - sessionStart < SESSION_DELAY_MS) {
     const left = Math.ceil((SESSION_DELAY_MS - (Date.now() - sessionStart)) / 1000);
@@ -484,7 +484,7 @@ async function openRedeem() {
 // ===== REDEEM AD (one ad before PUBG ID) =====
 function openRedeemAd() {
   // 5-min session check
-  const SESSION_DELAY_MS = 5 * 60 * 1000;
+  const SESSION_DELAY_MS = 0;
   const sessionStart = window._ucSessionStart || (window._ucSessionStart = Date.now());
   if (Date.now() - sessionStart < SESSION_DELAY_MS) {
     const left = Math.ceil((SESSION_DELAY_MS - (Date.now() - sessionStart)) / 1000);
