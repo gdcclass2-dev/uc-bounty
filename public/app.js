@@ -220,7 +220,16 @@ async function watchAd() {
   const fill = document.getElementById('adTimerFill');
   const claim = document.getElementById('adClaimBtn');
   modal.classList.remove('hidden');
-  content.innerHTML = '<div style="font-size:50px;margin-bottom:8px">🎬</div><p style="color:#FFD700;font-weight:bold">Sponsor ad opened in new tab</p><p style="color:#00E5FF;font-size:13px">Watch it fully, return here and wait for the timer.</p>';
+  // Show prominent "tap back" hint that pulses to grab attention
+  content.innerHTML = `
+    <div style="font-size:60px;margin-bottom:10px;animation:bounce 1s infinite">🎬</div>
+    <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:6px 0">Ad opened in new tab!</p>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;border-radius:12px;padding:14px;margin:14px 0;animation:pulse 2s infinite">
+      <p style="color:#FFD700;font-weight:bold;font-size:15px;margin:0 0 6px 0">👆 TAP THE BACK BUTTON</p>
+      <p style="color:#fff;font-size:13px;margin:0">to return here &amp; claim <span style="color:#00ff88;font-weight:bold">+30 pts</span></p>
+    </div>
+    <p style="color:#00E5FF;font-size:12px;margin:6px 0">⏱️ Watch the ad (or skip) then come back here</p>
+  `;
 
   // Open Monetag in new tab (ONCE per Watch Ad) - user returns and waits for our timer
   // Use the real Monetag on-click URL (omg10.com = direct ad, opens in new tab with actual ad)
