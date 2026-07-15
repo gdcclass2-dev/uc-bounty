@@ -192,15 +192,7 @@ function refreshWallet() {
 // ===== EARN: AD (server-side timing) =====
 let adState = { adToken: null, startedAt: 0, totalSeconds: 10 };
 async function watchAd() {
-  // 5-minute session check (no ads for first 5 min of using the app)
-  const SESSION_DELAY_MS = 5 * 60 * 1000;
-  const sessionStart = window._ucSessionStart || (window._ucSessionStart = Date.now());
-  if (Date.now() - sessionStart < SESSION_DELAY_MS) {
-    const left = Math.ceil((SESSION_DELAY_MS - (Date.now() - sessionStart)) / 1000);
-    const m = Math.floor(left / 60), s = left % 60;
-    return toast('Ads unlock in ' + m + ':' + String(s).padStart(2,'0') + ' — keep using the app!');
-  }
-  if ((USER.adsWatchedToday || 0) >= SETTINGS.dailyAdLimit) return toast('Daily ad limit reached');
+  if ((USER.adsWatchedToday || 0) >= SETTINGS.dailyAdLimit) return toast('❌ Daily ad limit reached');
   // Ask server to start an ad session
   let j;
   try { j = await api('/api/earn/ad/start', {}); }
@@ -212,10 +204,7 @@ async function watchAd() {
   const fill = document.getElementById('adTimerFill');
   const claim = document.getElementById('adClaimBtn');
   modal.classList.remove('hidden');
-  content.innerHTML = '<div style="font-size:50px;margin-bottom:8px">🎬</div><p style="color:#FFD700;font-weight:bold">Sponsor ad opened in new tab</p><p style="color:#00E5FF;font-size:13px">Watch it fully, return here and wait for the timer.</p>';
-
-  // Open Monetag in new tab (ONCE per Watch Ad) - user returns and waits for our timer
-  try { window.open('https://al5sm.com/click', '_blank'); } catch(e) {}
+  content.innerHTML = '<div class="ad-spinner"></div><p>Loading sponsor...</p>';
   fill.style.width = '0%';
   claim.classList.add('hidden');
   let elapsed = 0;
@@ -483,16 +472,13 @@ async function openRedeem() {
 
 // ===== REDEEM AD (one ad before PUBG ID) =====
 function openRedeemAd() {
-  // 5-min session check
-  const SESSION_DELAY_MS = 5 * 60 * 1000;
-  const sessionStart = window._ucSessionStart || (window._ucSessionStart = Date.now());
-  if (Date.now() - sessionStart < SESSION_DELAY_MS) {
-    const left = Math.ceil((SESSION_DELAY_MS - (Date.now() - sessionStart)) / 1000);
-    const m = Math.floor(left / 60), s = left % 60;
-    return toast('Ads unlock in ' + m + ':' + String(s).padStart(2,'0'));
-  }
   document.getElementById('redeemAdUC').textContent = SETTINGS.ucPerRedeem;
   document.getElementById('redeemAdModal').classList.remove('hidden');
+  setTimeout(() => {
+    if (typeof window !== 'undefined') {
+      window.open('https://al5sm.com/click', '_blank');
+    }
+  }, 500);
 }
 function claimRedeemAd() {
   closeModal('redeemAdModal');
