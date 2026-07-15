@@ -215,7 +215,7 @@ async function watchAd() {
   content.innerHTML = '<div style="font-size:50px;margin-bottom:8px">🎬</div><p style="color:#FFD700;font-weight:bold">Sponsor ad opened in new tab</p><p style="color:#00E5FF;font-size:13px">Watch it fully, return here and wait for the timer.</p>';
 
   // Open Monetag in new tab (ONCE per Watch Ad) - user returns and waits for our timer
-  try { window.open('https://al5sm.com/click', '_blank'); } catch(e) {}
+  try { window.open(SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1 ? SETTINGS.monetagLink : 'https://al5sm.com/pfe/current/tag.min.js?z=11289197', '_blank'); } catch(e) {}
   fill.style.width = '0%';
   claim.classList.add('hidden');
   let elapsed = 0;

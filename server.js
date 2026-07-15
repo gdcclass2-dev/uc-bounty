@@ -34,7 +34,7 @@ function loadDB() {
         adminPassword: '@663629$',  // CHANGE THIS in admin panel - your secret password
         adsterraLink: 'https://www.profitabledisplaynetwork.com/xxxx',
         monetagLink: 'https://otieu.com/4/xxxx',
-        offerWallLink: 'https://al5sm.com/click',
+        offerWallLink: 'https://omg10.com/4/11286726',
         announcements: [],
         // 30-QUESTION PUBG QUIZ BANK (admin-tunable)
         quizQuestions: [
