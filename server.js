@@ -28,7 +28,7 @@ function loadDB() {
         signupBonus: 50,            // free points on signup
         adWatchSeconds: 5,         // required seconds to fully watch an ad
         offerWaitSeconds: 30,       // required seconds before offer can be claimed
-        adCooldownSeconds: 20,      // must wait this many seconds between ads
+        adCooldownSeconds: 0,       // NO cooldown between ads
         quizCooldownSeconds: 30,    // per-question cooldown
         quizPerDay: 5,              // max quiz questions per day
         adminPassword: '@663629$',  // CHANGE THIS in admin panel - your secret password
@@ -118,7 +118,7 @@ if (db.settings.quizQuestions && db.settings.quizQuestions.length < 25) {
   // also add the new settings keys if missing
   if (typeof db.settings.adWatchSeconds !== 'number') db.settings.adWatchSeconds = 10;
   if (typeof db.settings.offerWaitSeconds !== 'number') db.settings.offerWaitSeconds = 30;
-  if (typeof db.settings.adCooldownSeconds !== 'number') db.settings.adCooldownSeconds = 20;
+  if (typeof db.settings.adCooldownSeconds !== 'number') db.settings.adCooldownSeconds = 0;
   if (typeof db.settings.quizCooldownSeconds !== 'number') db.settings.quizCooldownSeconds = 30;
   if (typeof db.settings.quizPerDay !== 'number') db.settings.quizPerDay = 5;
   saveDB();
@@ -254,7 +254,7 @@ app.post('/api/earn/ad/start', auth, (req, res) => {
   const now = Date.now();
   resetDailyCounters(u);
   if (u.adsWatchedToday >= db.settings.dailyAdLimit) return res.status(429).json({ error: 'Daily ad limit reached' });
-  const cooldown = (db.settings.adCooldownSeconds || 20) * 1000;
+  const cooldown = (db.settings.adCooldownSeconds || 0) * 1000;
   if (u.lastAdClaimAt && (now - u.lastAdClaimAt) < cooldown) {
     return res.status(429).json({ error: `Wait ${Math.ceil((cooldown - (now - u.lastAdClaimAt)) / 1000)}s between ads` });
   }
