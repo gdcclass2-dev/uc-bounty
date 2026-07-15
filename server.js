@@ -286,11 +286,11 @@ app.post('/api/earn/ad/claim', auth, (req, res) => {
     return res.status(429).json({ error: 'Daily ad limit reached' });
   }
   // Cap daily earnings from ads
-  const cap = (db.settings.dailyAdLimit || 50) * 10; // safety cap
+  const cap = (db.settings.dailyAdLimit || 50) * 30; // safety cap (30 pts per ad)
   if (u.dailyAdPointTotal >= cap) { delete u._pendingAd; return res.status(429).json({ error: 'Daily ad point cap reached' }); }
   u.adsWatchedToday++;
-  u.dailyAdPointTotal += (u.premium ? 10 : 5);
-  const pts = u.premium ? 10 : 5;
+  const pts = u.premium ? 60 : 30;  // premium 2x
+  u.dailyAdPointTotal += pts;
   u.lastAdClaimAt = now;
   delete u._pendingAd;
   addPoints(u, pts, 'ad');
