@@ -462,8 +462,9 @@ app.post('/api/earn/offer/claim', auth, (req, res) => {
 
 
 // INSTALL GAME (real Play Store offers): start + claim
+// Web apps can't verify installs, so we trust + cap daily to prevent farming
 const INSTALL_DAILY_CAP = 5;     // max 5 installs per day per user
-const INSTALL_WAIT_SECONDS = 30;  // must wait 30s before claiming
+const INSTALL_WAIT_SECONDS = 0;  // NO wait (was 30s, too strict - users lost interest)
 app.post('/api/earn/install/start', auth, (req, res) => {
   const u = req.user;
   if (u.banned) return res.status(403).json({ error: 'Banned' });
@@ -489,15 +490,16 @@ app.post('/api/earn/install/claim', auth, (req, res) => {
   if (u.banned) return res.status(403).json({ error: 'Banned' });
   const now = Date.now();
   resetDailyCounters(u);
+  // accept either installToken (new) or just pkg+name+pts (old/fallback)
   const { installToken, pkg, name, pts } = req.body;
   const pending = u._pendingInstall;
-  if (!pending || pending.token !== installToken) {
-    return res.status(400).json({ error: 'No install in progress. Tap INSTALL again.' });
-  }
-  const required = INSTALL_WAIT_SECONDS * 1000;
-  const elapsed = now - pending.startedAt;
-  if (elapsed < required) {
-    return res.status(400).json({ error: 'Verifying... ' + Math.ceil((required - elapsed) / 1000) + 's remaining. Install the game first!' });
+  // LENIENT: if no pending token, accept if start was called within last 10 min
+  // (this fixes the "user installed but no points" problem when Play Store killed JS state)
+  const allowLenient = installToken && pending && pending.token === installToken;
+  const allowByStart = !installToken && pending && (now - pending.startedAt) < 10 * 60 * 1000;
+  if (!allowLenient && !allowByStart) {
+    // No state - require start
+    return res.status(400).json({ error: 'Tap INSTALL first to start the offer' });
   }
   // daily cap
   if ((u.installsToday || 0) >= INSTALL_DAILY_CAP) {
@@ -505,17 +507,18 @@ app.post('/api/earn/install/claim', auth, (req, res) => {
     return res.status(429).json({ error: 'Daily install limit reached' });
   }
   // already installed?
-  if (u.installedGames && u.installedGames.includes(pending.pkg)) {
+  const usedPkg = (pending && pending.pkg) || pkg;
+  if (u.installedGames && u.installedGames.includes(usedPkg)) {
     delete u._pendingInstall; saveDB();
     return res.status(400).json({ error: 'You already installed this game' });
   }
-  // award points
+  // award points (100 default)
   const reward = Math.min(200, Math.max(10, parseInt(pts) || 100));
   u.installsToday = (u.installsToday || 0) + 1;
   if (!u.installedGames) u.installedGames = [];
-  u.installedGames.push(pending.pkg);
+  u.installedGames.push(usedPkg);
   delete u._pendingInstall;
-  addPoints(u, reward, 'install:' + (name || pending.pkg));
+  addPoints(u, reward, 'install:' + (name || usedPkg));
   saveDB();
   res.json({ ok: true, points: reward, user: u, installsToday: u.installsToday, installsLeft: Math.max(0, INSTALL_DAILY_CAP - u.installsToday) });
 });

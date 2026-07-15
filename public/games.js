@@ -266,6 +266,9 @@ function filterGames(filter, btn) {
 }
 
 let _installStartTs = 0;
+let _lastInstallPkg = null;
+let _lastInstallName = null;
+let _lastInstallPoints = 0;
 async function installGame(pkg, name, points) {
   // Open Play Store (deep link)
   const playUrl = 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(pkg);
@@ -277,13 +280,18 @@ async function installGame(pkg, name, points) {
     window.open(playUrl, '_blank');
   }
 
-  // Call server to start install (gets token + 30s wait)
+  // Call server to start install (gets token)
+  _lastInstallPkg = pkg;
+  _lastInstallName = name;
+  _lastInstallPoints = points;
   try {
     const j = await api('/api/earn/install/start', { pkg });
     if (j && j.installToken) {
       window._pendingInstallToken = j.installToken;
       _installStartTs = j.startedAt;
-      toast('📥 ' + name + ' opening... Wait 30s after install, then tap CLAIM! +' + points + ' pts');
+      toast('📥 ' + name + ' opening... Install it, then come back & tap CLAIM! +' + points + ' pts');
+      // Re-render so button state changes to CLAIM
+      setTimeout(() => renderGamesList(document.querySelector(".filter-btn.active")?.dataset.filter || "all"), 500);
     }
   } catch(e) {
     toast('❌ ' + (e.message || 'Cannot start install'));
@@ -291,25 +299,36 @@ async function installGame(pkg, name, points) {
 }
 
 async function claimGameReward(pkg, name, points) {
-  if (!window._pendingInstallToken) {
+  // If no token (browser killed JS state), use fallback to last install
+  const token = window._pendingInstallToken;
+  const usePkg = pkg || _lastInstallPkg;
+  const useName = name || _lastInstallName;
+  const usePts = points || _lastInstallPoints;
+  if (!token && !_lastInstallPkg) {
+    return toast('⚠️ Tap INSTALL first to start the offer');
+  }
+  if (!usePkg) {
     return toast('⚠️ Tap INSTALL first to start the offer');
   }
   try {
     const j = await api('/api/earn/install/claim', {
-      installToken: window._pendingInstallToken,
-      pkg, name, pts: points
+      installToken: token || '',
+      pkg: usePkg, name: useName, pts: usePts
     });
     if (j && j.ok) {
       if (typeof USER !== 'undefined' && j.user) {
         USER = j.user;
         if (typeof refreshUI === 'function') refreshUI();
-        if (typeof pushTx === 'function') pushTx('Installed ' + name, j.points);
+        if (typeof pushTx === 'function') pushTx('Installed ' + (useName || 'game'), j.points);
       }
-      claimedGames.add(pkg);
+      claimedGames.add(usePkg);
       localStorage.setItem('uc_claimedGames', JSON.stringify([...claimedGames]));
       window._pendingInstallToken = null;
+      _lastInstallPkg = null;
+      _lastInstallName = null;
+      _lastInstallPoints = 0;
       renderGamesList(document.querySelector('.filter-btn.active')?.dataset.filter || 'all');
-      toast('🎉 +' + j.points + ' pts for ' + name + '! (' + (j.installsLeft || 0) + ' installs left today)');
+      toast('🎉 +' + j.points + ' pts for ' + (useName || 'game') + '! (' + (j.installsLeft || 0) + ' installs left today)');
     }
   } catch(e) {
     toast('❌ ' + (e.message || 'Claim failed'));
