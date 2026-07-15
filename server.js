@@ -86,6 +86,36 @@ function loadDB() {
 function saveDB() { fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2)); }
 let db = loadDB();
 
+// ===== NORMALIZE QUIZ QUESTIONS ON LOAD (handle mixed formats) =====
+(function normalizeQuiz() {
+  if (!db.settings || !db.settings.quizQuestions) return;
+  const bank = db.settings.quizQuestions;
+  let fixed = 0;
+  for (const q of bank) {
+    if (!q) continue;
+    const opts = q.options || q.opts || [];
+    let ans = ('answer' in q) ? q.answer : q.a;
+    // Normalize field names
+    if ('a' in q && !('answer' in q)) { q.answer = q.a; delete q.a; ans = q.answer; }
+    if ('opts' in q && !('options' in q)) { q.options = q.opts; delete q.opts; }
+    // Convert index to text
+    if (typeof ans === 'number' && ans >= 0 && ans < opts.length) {
+      q.answer = String(opts[ans]); fixed++;
+    } else if (typeof ans === 'string' && /^\d+$/.test(ans)) {
+      const idx = parseInt(ans);
+      if (idx >= 0 && idx < opts.length) {
+        q.answer = String(opts[idx]); fixed++;
+      }
+    } else if (ans !== undefined) {
+      q.answer = String(ans); // ensure string
+    }
+  }
+  if (fixed > 0) {
+    console.log('[normalize] Fixed ' + fixed + ' quiz questions');
+    try { saveDB(); } catch(e) {}
+  }
+})();
+
 // One-time: if existing db has only 5 quiz questions, replace with new 30-question bank
 if (db.settings.quizQuestions && db.settings.quizQuestions.length < 25) {
   const newBank = [
