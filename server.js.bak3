@@ -469,7 +469,7 @@ app.post('/api/earn/quiz/start', auth, (req, res) => {
   res.json({
     ok: true,
     done: false,
-    question: { q: q.q, opts: q.options || q.opts, hash: qHash, correctAnswer: (q.options||q.opts).indexOf(q.answer) },
+    question: { q: q.q, opts: q.options || q.opts, hash: qHash, correctAnswer: q.answer },
     cooldown: db.settings.quizCooldownSeconds || 30,
     answeredToday: u.quizAnsweredToday.length,
     limit: db.settings.quizPerDay || 5

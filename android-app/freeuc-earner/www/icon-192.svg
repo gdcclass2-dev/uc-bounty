@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="40%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#1a0033"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8DC"/>
+      <stop offset="30%" stop-color="#FFD700"/>
+      <stop offset="60%" stop-color="#FFA500"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="192" height="192" rx="38" fill="url(#bg)"/>
+  <g opacity="0.5" fill="#fff">
+    <circle cx="28" cy="32" r="1.5"/>
+    <circle cx="164" cy="48" r="1.2"/>
+    <circle cx="38" cy="160" r="1.4"/>
+    <circle cx="160" cy="150" r="1.6"/>
+  </g>
+  <circle cx="96" cy="96" r="60" fill="none" stroke="url(#gold)" stroke-width="3" opacity="0.5" filter="url(#glow)"/>
+  <text x="96" y="118" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="78" fill="url(#gold)" stroke="#B8860B" stroke-width="2">UC</text>
+  <text x="96" y="118" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="78" fill="#fff" opacity="0.3">UC</text>
+</svg>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#FF6B00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Free UC Earner - Earn Real UC</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+</head>
+<body>
+
+<!-- Bottom Ad Banner (compact, dismissible) -->
+<div id="bottomBannerAd" style="position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:9998;background:linear-gradient(90deg,#1a1a2e,#16213e);padding:6px 12px;border-radius:20px;border:1px solid rgba(0,229,255,0.4);box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;cursor:pointer;max-width:280px" onclick="clickBottomBanner()">
+  <span style="font-size:14px">💰</span>
+  <div id="bottomBannerText" style="color:#fff;font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">Tap to earn +100 pts!</div>
+  <button onclick="event.stopPropagation();hideBottomBanner()" style="background:rgba(255,255,255,0.1);border:0;color:#aaa;padding:0 4px;border-radius:8px;font-size:10px;cursor:pointer;line-height:1">✕</button>
+</div>
+
+<!-- Top Sticky Banner Ad (Monetag direct link) -->
+<div id="topBannerAd" style="position:sticky;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a1a2e,#16213e);padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,215,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.4)">
+  <div id="topBannerContent" style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="clickTopBanner()">
+    <span style="font-size:16px">📢</span>
+    <div style="flex:1;min-width:0">
+      <div style="color:#FFD700;font-size:11px;font-weight:bold;line-height:1.1">🎁 SPONSORED OFFER</div>
+      <div id="topBannerText" style="color:#fff;font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tap to claim bonus rewards!</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:4px">
+    <button onclick="event.stopPropagation();rotateTopBanner()" style="background:rgba(255,215,0,0.2);border:1px solid rgba(255,215,0,0.4);color:#FFD700;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer">↻ NEW</button>
+    <button onclick="event.stopPropagation();hideTopBanner()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#aaa;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer">✕</button>
+  </div>
+</div>
+
+<!-- Animated PUBG background -->
+<div class="bg-grid"></div>
+<div class="bg-particles"></div>
+<div class="bg-vignette"></div>
+
+<!-- ============== SPLASH ============== -->
+<div id="splash" class="screen active">
+  <div class="parachute">🪂</div>
+  <div class="logo-big">
+    <img src="logo.svg" alt="Free UC Earner" style="width:140px;height:140px;filter:drop-shadow(0 8px 24px rgba(255,215,0,0.5));animation:logoSpin 8s linear infinite;margin:0 auto 12px;display:block"/>
+    <h1 class="brand">FREE UC <span>EARNER</span></h1>
+    <p class="tagline">WATCH ADS • EARN UC • INSTANT PAYOUT</p>
+  </div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <p class="splash-foot">v1.0 • For PUBG Mobile players</p>
+</div>
+
+<!-- ============== AUTH ============== -->
+<div id="auth" class="screen">
+  <div class="auth-card">
+    <div class="logo-small">
+      <div class="crosshair">🎯</div>
+      <h2>UC <span>BOUNTY</span></h2>
+    </div>
+    <p class="auth-sub">Join the hunt. Earn real UC.</p>
+    <div class="input-group">
+      <label>In-game Name</label>
+      <input id="authUsername" type="text" placeholder="e.g. ShadowHunter" maxlength="16" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>PUBG Player ID <span class="optional">(optional now, required to redeem)</span></label>
+      <input id="authPubgId" type="text" placeholder="e.g. 5123456789" maxlength="20" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>Referral Code <span class="optional">(optional)</span></label>
+      <input id="authRef" type="text" placeholder="Friend's code" maxlength="12" autocomplete="off">
+    </div>
+    <button id="authSubmit" class="btn btn-primary">START HUNTING</button>
+    <p class="auth-fine">By continuing you accept that points are earned by watching ads & completing offers. UC is transferred manually by the admin within 24–48h after a valid request.</p>
+  </div>
+</div>
+
+<!-- ============== APP ============== -->
+<div id="app" class="screen">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand-mini" style="display:flex;align-items:center;gap:6px">
+      <img src="logo.svg" alt="" style="width:28px;height:28px;border-radius:6px"/>
+      <span style="font-weight:900">FREE UC<span style="color:#FFD700">EARNER</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="sfxToggle" onclick="toggleSfx()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);color:#FFD700;padding:6px 10px;border-radius:8px;font-size:14px;cursor:pointer" title="Toggle sounds">🔊</button>
+      <div class="balance-pill" onclick="switchTab('wallet')">
+        <span class="pts-icon">💎</span>
+        <span id="topPoints">0</span> pts
+      </div>
+    </div>
+  </header>
+
+  <!-- Announcement banner -->
+  <div id="annBar" class="ann-bar hidden"></div>
+
+  <!-- TAB: HOME -->
+  <div id="tab-home" class="tab active">
+    <div class="hero-card">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="level-badge" id="levelBadge">LV 1</div>
+        <div class="balance-big">
+          <div class="bal-label">YOUR BOUNTY</div>
+          <div class="bal-num"><span id="bigPoints">0</span> <span class="pts-unit">PTS</span></div>
+          <div class="bal-sub" id="balUC">= 0 UC</div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-info">
+            <span id="progToRedeem">0 / 6000 to redeem</span>
+            <span id="progPct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+        </div>
+        <button class="btn btn-gold" id="redeemBtn" onclick="openRedeem()">
+          <span class="lock-icon">🔒</span> REDEEM UC
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <h3 class="section-h">QUICK HUNT</h3>
+    <div class="quick-grid">
+      <button class="qcard" onclick="watchAd()">
+        <div class="qicon">📺</div>
+        <div class="qtitle">Watch Ad</div>
+        <div class="qpts">+5 pts</div>
+      </button>
+      <button class="qcard" onclick="openQuiz()">
+        <div class="qicon">🧠</div>
+        <div class="qtitle">Daily Quiz</div>
+        <div class="qpts">up to +10</div>
+      </button>
+      <button class="qcard" onclick="doSpin()">
+        <div class="qicon">🎰</div>
+        <div class="qtitle">Lucky Spin</div>
+        <div class="qpts">5-100 pts</div>
+      </button>
+      <button class="qcard" onclick="checkin()">
+        <div class="qicon">🔥</div>
+        <div class="qtitle">Check-in</div>
+        <div class="qpts" id="checkinPts">+5 pts</div>
+      </button>
+      <button class="qcard" onclick="openInvite()" style="background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,229,255,0.1));border:1px solid rgba(0,255,136,0.4)">
+        <div class="qicon">🎁</div>
+        <div class="qtitle">Invite</div>
+        <div class="qpts" style="color:#00ff88">+500 pts</div>
+      </button>
+    </div>
+
+    <!-- IN-FEED NATIVE AD (Monetag) - looks like a card -->
+    <div onclick="clickInFeedAd()" id="inFeedAd" style="background:linear-gradient(135deg,#2d1b4e,#1a1a2e);border:1px solid rgba(255,215,0,0.3);border-radius:14px;padding:14px;margin:14px 0;display:flex;align-items:center;gap:12px;cursor:pointer;position:relative;overflow:hidden">
+      <div style="position:absolute;top:4px;right:6px;background:rgba(255,215,0,0.2);color:#FFD700;font-size:8px;padding:2px 6px;border-radius:8px;font-weight:bold">AD</div>
+      <div style="font-size:32px">💎</div>
+      <div style="flex:1;min-width:0">
+        <div style="color:#FFD700;font-size:12px;font-weight:bold;margin-bottom:2px">SPONSORED OFFER</div>
+        <div id="inFeedAdText" style="color:#fff;font-size:13px;font-weight:600">Earn $5 in 5 minutes - Install this app</div>
+        <div style="color:#00ff88;font-size:11px;margin-top:2px">⭐⭐⭐⭐⭐ 4.8 (12k reviews)</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#FFD700,#ff6b6b);color:#000;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:bold;white-space:nowrap">INSTALL</div>
+    </div>
+
+    <!-- Daily offers (REAL Play Store links) -->
+    <h3 class="section-h">INSTALL & EARN <span class="hot">REAL UC</span></h3>
+    <div class="offer-list" id="offerList">
+      <div class="offer-card offer-card-big" onclick="openGamesModal()">
+        <div class="offer-icon">🎮</div>
+        <div class="offer-info">
+          <div class="offer-title">🎮 135+ Games Available</div>
+          <div class="offer-sub">Install one by one • Earn up to +100 pts each</div>
+        </div>
+        <div class="offer-reward">+13,500</div>
+      </div>
+      <div class="offer-card" onclick="openMonetagOffers()">
+        <div class="offer-icon">💰</div>
+        <div class="offer-info">
+          <div class="offer-title">💰 Real Money Offers (Monetag)</div>
+          <div class="offer-sub">Real installs • Big rewards • Verified</div>
+        </div>
+        <div class="offer-reward">+UP TO 500</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <h3 class="section-h">TOP HUNTERS</h3>
+    <div class="leaderboard" id="leaderboard"></div>
+  </div>
+
+  <!-- TAB: EARN -->
+  <div id="tab-earn" class="tab">
+    <h2 class="page-title">🎯 EARN POINTS</h2>
+
+    <div class="earn-section">
+      <h3 class="section-h">📺 WATCH & EARN</h3>
+      <div class="task-list">
+        <div class="task-card" data-task="ad">
+          <div class="task-icon">📺</div>
+          <div class="task-info">
+            <div class="task-name">Watch Video Ad</div>
+            <div class="task-sub">30s • <span class="remaining" id="adRem">50/50</span></div>
+          </div>
+          <button class="btn btn-sm" onclick="watchAd()">+5</button>
+        </div>
+        <div class="task-card" data-task="ad2">
+          <div class="task-icon">🎬</div>
+          <div class="task-info">
+            <div class="task-name">Rewarded Video (Long)</div>
+            <div class="task-sub">60s • higher reward</div>
+          </div>
+          <button class="btn btn-sm" onclick="watchAdLong()">+10</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">🧠 PLAY & WIN</h3>
+      <div class="task-list">
+        <div class="task-card">
+          <div class="task-icon">❓</div>
+          <div class="task-info">
+            <div class="task-name">Daily Quiz</div>
+            <div class="task-sub">5 questions • +2 per correct</div>
+          </div>
+          <button class="btn btn-sm" onclick="openQuiz()">START</button>
+        </div>
+        <div class="task-card">
+          <div class="task-icon">🎰</div>
+          <div class="task-info">
+            <div class="task-name">Lucky Spin</div>
+            <div class="task-sub">Free every 6h</div>
+          </div>
+          <button class="btn btn-sm" onclick="doSpin()">SPIN</button>
+        </div>
+        <div class="task-card">
+          <div class="task-icon">🎮</div>
+          <div class="task-info">
+            <div class="task-name">Tap Speed Game</div>
+            <div class="task-sub">Tap fast to earn</div>
+          </div>
+          <button class="btn btn-sm" onclick="openGame()">PLAY</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">📥 DOWNLOAD OFFERS</h3>
+      <div class="task-list">
+        <div class="task-card" onclick="openOffer('d1')">
+          <div class="task-icon">⚔️</div>
+          <div class="task-info">
+            <div class="task-name">Install: Shadow Fight</div>
+            <div class="task-sub">Reach level 3</div>
+          </div>
+          <div class="reward-pill">+50</div>
+        </div>
+        <div class="task-card" onclick="openOffer('d2')">
+          <div class="task-icon">🚗</div>
+          <div class="task-info">
+            <div class="task-name">Install: Racing Rivals</div>
+            <div class="task-sub">Complete 1 race</div>
+          </div>
+          <div class="reward-pill">+40</div>
+        </div>
+        <div class="task-card" onclick="openOffer('d3')">
+          <div class="task-icon">🏰</div>
+          <div class="task-info">
+            <div class="task-name">Install: Lords Mobile</div>
+            <div class="task-sub">Build a castle</div>
+          </div>
+          <div class="reward-pill">+45</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="earn-section">
+      <h3 class="section-h">📣 SOCIAL TASKS</h3>
+      <div class="task-list">
+        <div class="task-card" onclick="doSocial('yt')">
+          <div class="task-icon">▶️</div>
+          <div class="task-info">
+            <div class="task-name">Subscribe YouTube</div>
+            <div class="task-sub">Follow our channel</div>
+          </div>
+          <div class="reward-pill">+10</div>
+        </div>
+        <div class="task-card" onclick="doSocial('ig')">
+          <div class="task-icon">📷</div>
+          <div class="task-info">
+            <div class="task-name">Follow Instagram</div>
+            <div class="task-sub">@ucbounty</div>
+          </div>
+          <div class="reward-pill">+10</div>
+        </div>
+        <div class="task-card" onclick="doSocial('tg')">
+          <div class="task-icon">✈️</div>
+          <div class="task-info">
+            <div class="task-name">Join Telegram</div>
+            <div class="task-sub">Get updates & codes</div>
+          </div>
+          <div class="reward-pill">+15</div>
+        </div>
+        <div class="task-card" onclick="doSocial('wh')">
+          <div class="task-icon">💬</div>
+          <div class="task-info">
+            <div class="task-name">Join WhatsApp Channel</div>
+            <div class="task-sub">Bonus codes daily</div>
+          </div>
+          <div class="reward-pill">+15</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: WALLET -->
+  <div id="tab-wallet" class="tab">
+    <h2 class="page-title">💰 WALLET</h2>
+    <div class="wallet-hero">
+      <div class="wh-label">CURRENT BALANCE</div>
+      <div class="wh-num"><span id="walletPoints">0</span> <span class="pts-unit">PTS</span></div>
+      <div class="wh-sub" id="walletUC">= 0 UC</div>
+    </div>
+    <div class="wallet-stats">
+      <div class="ws-card">
+        <div class="ws-num" id="wsToday">0</div>
+        <div class="ws-label">Today</div>
+      </div>
+      <div class="ws-card">
+        <div class="ws-num" id="wsWeek">0</div>
+        <div class="ws-label">This Week</div>
+      </div>
+      <div class="ws-card">
+        <div class="ws-num" id="wsAll">0</div>
+        <div class="ws-label">All Time</div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-block" onclick="openRedeem()">REDEEM UC</button>
+    <div class="history" id="history">
+      <h3 class="section-h">RECENT ACTIVITY</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PROFILE -->
+  <div id="tab-profile" class="tab">
+    <div class="profile-card">
+      <div class="avatar" id="avatar">🎮</div>
+      <h2 id="pUsername">Hunter</h2>
+      <div class="premium-badge hidden" id="premBadge">💎 PREMIUM</div>
+      <div class="pubg-line">PUBG ID: <span id="pPubgId">—</span></div>
+    </div>
+    <div class="profile-list">
+      <div class="prof-row" onclick="openReferral()">
+        <div class="prof-icon">👥</div>
+        <div class="prof-info">
+          <div class="prof-title">Invite Friends</div>
+          <div class="prof-sub">+50 pts per friend</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openPremium()">
+        <div class="prof-icon">💎</div>
+        <div class="prof-info">
+          <div class="prof-title">Get Premium</div>
+          <div class="prof-sub">2x points • No redeem cooldown</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openHistory()">
+        <div class="prof-icon">📜</div>
+        <div class="prof-info">
+          <div class="prof-title">Redeem History</div>
+          <div class="prof-sub">Track your UC claims</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+      <div class="prof-row" onclick="openSupport()">
+        <div class="prof-icon">🛟</div>
+        <div class="prof-info">
+          <div class="prof-title">Support</div>
+          <div class="prof-sub">Get help on WhatsApp/Telegram</div>
+        </div>
+        <div class="prof-arrow">›</div>
+      </div>
+    </div>
+    <p class="version">Free UC Earner v1.0.0</p>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home"><span>🏠</span><small>Home</small></button>
+    <button class="nav-btn" data-tab="earn"><span>🎯</span><small>Earn</small></button>
+    <button class="nav-btn" data-tab="wallet"><span>💰</span><small>Wallet</small></button>
+    <button class="nav-btn" data-tab="profile"><span>👤</span><small>Profile</small></button>
+  </nav>
+</div>
+
+<!-- ============== MODALS ============== -->
+
+<!-- Ad Modal -->
+<div class="modal hidden" id="adModal">
+  <div class="modal-box ad-box">
+    <div class="ad-timer-bar"><div class="ad-timer-fill" id="adTimerFill"></div></div>
+    <div class="ad-content" id="adContent">
+      <div class="ad-spinner"></div>
+      <p>Loading sponsor...</p>
+    </div>
+    <div class="ad-foot">
+      <button class="btn btn-gold btn-block hidden" id="adClaimBtn" onclick="claimAd()">CLAIM REWARD</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('adModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Spin Modal -->
+<div class="modal hidden" id="spinModal">
+  <div class="modal-box">
+    <h2>🎰 LUCKY SPIN</h2>
+    <p style="color:#aaa;font-size:12px;margin:2px 0 8px 0">Win up to <span style="color:#FFD700;font-weight:bold">500 pts</span>! 🎰</p>
+    <div class="wheel-wrap">
+      <div class="wheel" id="wheel">
+        <div class="wheel-seg" style="--i:0">10</div>
+        <div class="wheel-seg" style="--i:1">15</div>
+        <div class="wheel-seg" style="--i:2">20</div>
+        <div class="wheel-seg" style="--i:3">30</div>
+        <div class="wheel-seg" style="--i:4">50</div>
+        <div class="wheel-seg" style="--i:5">75</div>
+        <div class="wheel-seg" style="--i:6">100</div>
+        <div class="wheel-seg" style="--i:7">200</div>
+        <div class="wheel-seg" style="--i:8">🎰</div>
+      </div>
+      <div class="wheel-pointer">▼</div>
+    </div>
+    <p id="spinCounter" style="color:#FFD700;font-size:13px;margin:8px 0;font-weight:bold">Spins left: 3/3</p>
+    <button class="btn btn-gold btn-block" id="spinGo" onclick="spinNow()">SPIN NOW</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('spinModal')">Close</button>
+  </div>
+</div>
+
+<!-- Quiz Modal -->
+<div class="modal hidden" id="quizModal">
+  <div class="modal-box quiz-box">
+    <div class="quiz-head">
+      <h2>🧠 DAILY QUIZ</h2>
+      <div class="quiz-prog">Answered: <span id="quizLimit">0/5</span></div>
+    </div>
+    <div id="quizQ"></div>
+    <div class="quiz-opts" id="quizOpts"></div>
+    <div class="quiz-score" id="quizScore">Score: 0</div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('quizModal')">Close</button>
+  </div>
+</div>
+
+<!-- Offer Verifying Modal -->
+<div class="modal hidden" id="offerModal">
+  <div class="modal-box offer-verify-box">
+    <h2>🔍 VERIFYING OFFER</h2>
+    <p>We're verifying your offer completion. Please keep this app open.</p>
+    <div class="offer-verify-icon">⏳</div>
+    <div class="offer-wait-bar"><div class="offer-wait-fill" id="offerWaitFill"></div></div>
+    <div class="offer-wait-text"><span id="offerWaitLeft">30</span>s / <span id="offerWaitTotal">30</span>s</div>
+    <button class="btn btn-gold btn-block hidden" id="offerClaimBtn" onclick="claimOffer()">CLAIM +30 PTS</button>
+    <p class="hint">⚠️ Closing this window or quitting before the timer ends will cancel the offer.</p>
+  </div>
+</div>
+
+<!-- Tap Game Modal -->
+<div class="modal hidden" id="gameModal">
+  <div class="modal-box game-box">
+    <h2>⚡ TAP SPEED</h2>
+    <p>Tap the target as many times as you can in 10 seconds!</p>
+    <div class="game-timer" id="gameTimer">10</div>
+    <button class="game-target" id="gameTarget" disabled>TAP ME</button>
+    <div class="game-score">Score: <span id="gameScore">0</span></div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('gameModal')">Close</button>
+  </div>
+</div>
+
+<!-- Rating Modal -->
+<div class="modal hidden" id="ratingModal">
+  <div class="modal-box">
+    <h2>⭐ RATE US</h2>
+    <p>Rate us 5 stars and share your experience to unlock redeem.</p>
+    <div class="stars" id="starsRow">
+      <span class="star" data-v="1">☆</span>
+      <span class="star" data-v="2">☆</span>
+      <span class="star" data-v="3">☆</span>
+      <span class="star" data-v="4">☆</span>
+      <span class="star" data-v="5">☆</span>
+    </div>
+    <textarea id="ratingText" placeholder="Your positive feedback helps us grow..." maxlength="200"></textarea>
+    <button class="btn btn-gold btn-block" onclick="submitRating()">SUBMIT & CONTINUE</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('ratingModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Cooldown Modal -->
+<div class="modal hidden" id="cooldownModal">
+  <div class="modal-box">
+    <h2>⏳ COOLDOWN</h2>
+    <p>Free users wait 3 hours between redeems.</p>
+    <div class="cd-clock" id="cdClock">02:47:13</div>
+    <p class="cd-tip">⭐ Upgrade to <b>Premium</b> for instant redeem with no cooldown!</p>
+    <button class="btn btn-gold btn-block" onclick="closeModal('cooldownModal');openPremium()">GO PREMIUM</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('cooldownModal')">OK</button>
+  </div>
+</div>
+
+<!-- Redeem Ad Modal -->
+<div class="modal hidden" id="redeemAdModal">
+  <div class="modal-box" style="text-align:center">
+    <h2>🎬 ONE LAST AD</h2>
+    <p>Please watch this short ad to unlock your <b><span id="redeemAdUC">300</span> UC</b> redeem.</p>
+    <div style="font-size:60px;margin:20px 0">📺</div>
+    <p style="color:var(--text-dim);font-size:14px">Ad will open in a new tab.<br>Come back here after watching to continue.</p>
+    <button class="btn btn-gold btn-block" id="redeemAdBtn" onclick="claimRedeemAd()">I WATCHED THE AD ➜</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('redeemAdModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- PUBG ID Modal -->
+<div class="modal hidden" id="pubgModal">
+  <div class="modal-box">
+    <h2>🎮 ENTER PUBG ID</h2>
+    <p>We'll transfer <b><span id="pubgUC">300</span> UC</b> to this account within 7 days.</p>
+    <input id="pubgInput" type="text" placeholder="Your PUBG Player ID" maxlength="20">
+    <p class="hint">Find your ID: Profile → top-right corner number</p>
+    <button class="btn btn-gold btn-block" onclick="submitRedeem()">CONFIRM REDEEM</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('pubgModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Premium Modal -->
+<div class="modal hidden" id="premModal">
+  <div class="modal-box">
+    <h2>💎 GO PREMIUM</h2>
+    <ul class="prem-list">
+      <li>✅ 2x points on all tasks</li>
+      <li>✅ Instant redeem (no cooldown)</li>
+      <li>✅ Premium badge</li>
+      <li>✅ Daily bonus +200 pts</li>
+      <li>✅ Priority support</li>
+    </ul>
+    <div class="prem-price">PKR 250 <small>/ month</small></div>
+    <button class="btn btn-gold btn-block" onclick="buyPremium()">ACTIVATE NOW</button>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('premModal')">Maybe later</button>
+  </div>
+</div>
+
+<!-- Payment Modal (premium activation) -->
+<div class="modal hidden" id="payModal">
+  <div class="modal-box pay-box">
+    <h2>💎 ACTIVATE PREMIUM</h2>
+    <p class="hint" style="color:#FFD700;margin-bottom:12px">Send <b>PKR 250</b> via any method below, then submit your Transaction ID.</p>
+    <div class="pay-methods">
+      <button class="pay-method active" data-method="jazzcash" onclick="selectPayMethod('jazzcash', this)">📱 JazzCash</button>
+      <button class="pay-method" data-method="easypaisa" onclick="selectPayMethod('easypaisa', this)">📱 Easypaisa</button>
+      <button class="pay-method" data-method="bank" onclick="selectPayMethod('bank', this)">🏦 Bank</button>
+      <button class="pay-method" data-method="card" onclick="selectPayMethod('card', this)">💳 Card</button>
+      <button class="pay-method" data-method="usdt" onclick="selectPayMethod('usdt', this)">💎 USDT</button>
+      <button class="pay-method" data-method="paypal" onclick="selectPayMethod('paypal', this)">🅿️ PayPal</button>
+    </div>
+    <div id="payDetails" class="pay-details"></div>
+    <div class="pay-form">
+      <label>Your Name</label>
+      <input id="premiumSenderName" type="text" placeholder="Name on your account" class="pay-input">
+      <label>Transaction ID / Reference / TxHash</label>
+      <input id="premiumTrxId" type="text" placeholder="e.g. 1234567890" class="pay-input">
+      <button class="btn btn-gold btn-block" onclick="submitPremiumPayment()">SUBMIT PAYMENT</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('payModal')">Cancel</button>
+      <p class="hint" style="margin-top:8px">⏰ Admin verifies within 24h. You'll get 💎 badge + 2000 bonus points!</p>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal hidden" id="successModal">
+  <div class="modal-box">
+    <div class="success-check">✅</div>
+    <h2>REQUEST SENT</h2>
+    <p id="successMsg">Your redeem request is being processed. UC will arrive in 24-48h.</p>
+    <button class="btn btn-primary btn-block" onclick="closeModal('successModal')">OK</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- Games Modal (100+ real Play Store games) -->
+<div class="modal hidden" id="gamesModal">
+  <div class="modal-box games-box">
+    <h2>🎮 INSTALL GAMES & EARN</h2>
+    <p class="hint" style="color:#FF9800;font-weight:bold;margin:8px 0">
+      ⚠️ You MUST install each game to claim points! <br>
+      🗑️ You can delete the game after you get your points.
+    </p>
+    <div class="games-stats">
+      <span>📦 Total: <b id="gamesTotalCount">0</b> games</span>
+      <span>✅ Claimed: <b id="gamesClaimedCount">0</b></span>
+    </div>
+    <div class="games-filters">
+      <button class="filter-btn active" data-filter="all" onclick="filterGames('all', this)">All</button>
+      <button class="filter-btn" data-filter="battleroyale" onclick="filterGames('battleroyale', this)">Battle</button>
+      <button class="filter-btn" data-filter="racing" onclick="filterGames('racing', this)">Racing</button>
+      <button class="filter-btn" data-filter="puzzle" onclick="filterGames('puzzle', this)">Puzzle</button>
+      <button class="filter-btn" data-filter="action" onclick="filterGames('action', this)">Action</button>
+      <button class="filter-btn" data-filter="strategy" onclick="filterGames('strategy', this)">Strategy</button>
+    </div>
+    <div class="games-list" id="gamesList"></div>
+    <button class="btn btn-ghost btn-block" onclick="closeGamesModal()">CLOSE</button>
+  </div>
+</div>
+
+<script src="games.js"></script>
+<script src="app.js"></script>
+
+<!-- Monetag In-Page Push (small top notification) -->
+<script src="https://al5sm.com/pfe/current/tag.min.js?z=11289197" data-zone="11289197" data-ct="2"></script>
+<!-- Invite Friends Modal -->
+<div class="modal hidden" id="inviteModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #00ff88;text-align:center;max-width:380px;padding:18px">
+    <div style="font-size:50px;margin:6px 0;animation:bounce 1s infinite">🎁</div>
+    <h2 style="color:#00ff88;margin:4px 0;font-size:22px">INVITE & EARN 500 PTS!</h2>
+    <p style="color:#aaa;font-size:12px;margin:4px 0 10px 0">For every friend who installs & earns 100 pts</p>
+
+    <div style="background:rgba(0,255,136,0.05);border:2px dashed #00ff88;border-radius:12px;padding:14px;margin:10px 0">
+      <p style="color:#888;font-size:11px;margin:0 0 6px 0">YOUR INVITE CODE</p>
+      <p id="inviteCodeText" style="color:#FFD700;font-weight:bold;font-size:28px;letter-spacing:3px;margin:0;font-family:monospace">LOADING...</p>
+      <button class="btn btn-gold btn-block" style="margin-top:10px" onclick="copyInviteCode()">📋 COPY CODE</button>
+    </div>
+
+    <p style="color:#aaa;font-size:12px;margin:8px 0 6px 0">— OR SHARE LINK —</p>
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin:6px 0;display:flex;gap:6px;align-items:center">
+      <input id="inviteLinkInput" type="text" readonly value="" style="flex:1;background:transparent;border:0;color:#fff;font-size:11px;padding:4px">
+      <button onclick="copyInviteLink()" style="background:#00ff88;color:#000;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;border:0">COPY</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1;background:#25D366;color:#fff;border:0" onclick="shareWhatsApp()">📱 WhatsApp</button>
+      <button class="btn btn-ghost" style="flex:1;background:#0088cc;color:#fff;border:0" onclick="shareTelegram()">✈️ Telegram</button>
+    </div>
+
+    <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;margin:14px 0 8px 0">
+      <div style="display:flex;justify-content:space-around;text-align:center">
+        <div>
+          <p style="color:#FFD700;font-size:24px;font-weight:bold;margin:0" id="inviteCountText">0</p>
+          <p style="color:#888;font-size:10px;margin:0">Friends</p>
+        </div>
+        <div>
+          <p style="color:#00ff88;font-size:24px;font-weight:bold;margin:0" id="inviteEarningsText">0</p>
+          <p style="color:#888;font-size:10px;margin:0">Pts earned</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="inviteHistoryBox" style="max-height:120px;overflow-y:auto;text-align:left"></div>
+
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeModal('inviteModal')">CLOSE</button>
+  </div>
+</div>
+
+<!-- Mega Goal Popup (shows when user has enough to redeem) -->
+<div class="modal hidden" id="megaGoalModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;text-align:center;max-width:380px;padding:18px">
+    <div style="font-size:50px;margin:6px 0;animation:bounce 1s infinite">🎯</div>
+    <h2 style="color:#FFD700;margin:4px 0;font-size:20px">MEGA GOAL UNLOCKED!</h2>
+    <p style="color:#aaa;font-size:12px;margin:4px 0 10px 0">You've hit <span style="color:#00ff88;font-weight:bold">6,000 pts</span> - you can redeem now!</p>
+
+    <!-- Current option -->
+    <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.3);border-radius:10px;padding:10px;margin:8px 0">
+      <p style="color:#00E5FF;font-size:11px;margin:0 0 4px 0">REDEEM NOW</p>
+      <p style="color:#fff;font-weight:bold;font-size:22px;margin:0">300 UC</p>
+      <p style="color:#888;font-size:10px;margin:2px 0 0 0">6,000 pts · standard</p>
+    </div>
+
+    <p style="color:#aaa;font-size:13px;margin:10px 0 6px 0">— OR KEEP EARNING FOR —</p>
+
+    <!-- MEGA goal option -->
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,107,107,0.15));border:2px solid #FFD700;border-radius:12px;padding:14px;margin:8px 0;position:relative;animation:pulse 3s infinite">
+      <p style="position:absolute;top:-10px;right:8px;background:#FFD700;color:#000;font-size:10px;font-weight:bold;padding:3px 8px;border-radius:10px">⭐ 5X BIGGER</p>
+      <p style="color:#FFD700;font-size:11px;margin:0 0 4px 0;font-weight:bold">MEGA PRIZE</p>
+      <p style="color:#fff;font-weight:bold;font-size:18px;margin:0 0 6px 0">PUBG X-Suit</p>
+      <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:0">OR 100,000 UC! 🎰</p>
+      <div style="background:rgba(0,0,0,0.4);border-radius:8px;height:14px;overflow:hidden;position:relative;margin-top:10px">
+        <div id="megaGoalProgressBar" style="background:linear-gradient(90deg,#FFD700,#00ff88,#ff6b6b);height:100%;width:0%;transition:width 0.6s ease"></div>
+        <span id="megaGoalPct" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#000;font-weight:bold;font-size:10px">0%</span>
+      </div>
+      <p style="color:#aaa;font-size:11px;margin:6px 0 0 0"><span id="megaGoalPoints">0</span> / 30,000 pts</p>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeMegaGoalModal()">REDEEM 300 UC NOW</button>
+      <button class="btn btn-gold" style="flex:1" onclick="closeMegaGoalModal();switchTab('earn')">🎯 KEEP EARNING</button>
+    </div>
+    <p style="color:#888;font-size:10px;margin:8px 0 0 0">💡 You can always redeem now, or keep going for the MEGA prize!</p>
+  </div>
+</div>
+
+<!-- Daily Challenge Modal -->
+<div class="modal hidden" id="challengeModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;text-align:center;max-width:340px">
+    <div style="font-size:60px;margin:10px 0;animation:bounce 1s infinite">🎯</div>
+    <h2 style="color:#FFD700;margin:6px 0;font-size:22px">DAILY CHALLENGE</h2>
+    <p style="color:#fff;margin:8px 0;font-size:15px">Watch <span style="color:#00ff88;font-weight:bold;font-size:18px">100 ads</span> in one day</p>
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;margin:12px 0">
+      <p style="color:#888;font-size:12px;margin:0 0 6px 0">Progress: <span id="challengeAdsCount">0</span> / 100 ads</p>
+      <div style="background:rgba(0,0,0,0.4);border-radius:10px;height:18px;overflow:hidden;position:relative">
+        <div id="challengeProgressBar" style="background:linear-gradient(90deg,#FFD700,#00ff88);height:100%;width:0%;transition:width 0.6s ease"></div>
+        <span id="challengePct" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#000;font-weight:bold;font-size:12px">0%</span>
+      </div>
+    </div>
+    <div style="background:rgba(255,215,0,0.1);border:1px dashed #FFD700;border-radius:10px;padding:12px;margin:12px 0">
+      <p style="color:#888;font-size:11px;margin:0 0 4px 0">REWARD</p>
+      <p style="color:#FFD700;font-weight:bold;font-size:24px;margin:0">+1,000 PTS FREE! 🎁</p>
+    </div>
+    <p style="color:#aaa;font-size:11px;margin:8px 0">Resets daily at midnight</p>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeChallengeModal()">LATER</button>
+      <button class="btn btn-gold" style="flex:1" onclick="closeChallengeModal();watchAd()">WATCH ADS NOW</button>
+    </div>
+  </div>
+</div>
+
+<!-- Challenge Complete Celebration -->
+<div class="modal hidden" id="challengeDoneModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #00ff88;text-align:center;max-width:340px">
+    <div style="font-size:80px;margin:10px 0">🎉</div>
+    <h2 style="color:#00ff88;margin:6px 0;font-size:26px">CHALLENGE COMPLETE!</h2>
+    <p style="color:#fff;margin:10px 0;font-size:15px">You watched 100 ads today! 🏆</p>
+    <div style="background:rgba(0,255,136,0.1);border:1px solid #00ff88;border-radius:10px;padding:14px;margin:12px 0">
+      <p style="color:#888;font-size:12px;margin:0 0 4px 0">BONUS REWARD</p>
+      <p style="color:#00ff88;font-weight:bold;font-size:32px;margin:0">+1,000 PTS ✨</p>
+    </div>
+    <button class="btn btn-gold btn-block" onclick="closeChallengeDoneModal()">AWESOME!</button>
+  </div>
+</div>
+
+</body>
+</html>
+

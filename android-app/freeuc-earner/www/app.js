@@ -1268,10 +1268,3 @@ function toast(msg) {
   window._toastT = setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
-
-// ===== IN-FEED AD CLICK =====
-function clickInFeedAd() {
-  const url = (typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink) ? SETTINGS.monetagLink : 'https://omg10.com/4/11286726';
-  window.open(url, '_blank', 'noopener');
-  toast('💎 Opening offer...');
-}

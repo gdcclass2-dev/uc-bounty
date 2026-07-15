@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.freeuc.earner" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Free UC Earner</name>
+    <description>Earn free UC for PUBG Mobile by watching ads. Watch ads, complete tasks, and redeem real UC instantly via JazzCash, Easypaisa, Bank, USDT TRC20 or PayPal.</description>
+    <author email="admin@freeuc-earner.com" href="https://uc-bounty-production.up.railway.app">Free UC Earner</author>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <preference name="Orientation" value="portrait" />
+    <preference name="DisallowOverscroll" value="true" />
+    <preference name="android-minSdkVersion" value="21" />
+    <preference name="android-targetSdkVersion" value="33" />
+    <preference name="StatusBarOverlaysWebView" value="false" />
+    <preference name="StatusBarBackgroundColor" value="#000000" />
+    <preference name="Fullscreen" value="false" />
+    <icon platform="android" src="www/icon-192.png" />
+</widget>
