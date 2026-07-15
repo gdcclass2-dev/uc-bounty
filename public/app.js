@@ -237,6 +237,48 @@ function toggleSfx() {
   if (!window._sfxMuted) sfxClick();
 }
 
+// ===== DAILY CHALLENGE =====
+let CHALLENGE = { adsToday: 0, target: 100, bonus: 1000, completed: false, progress: 0 };
+async function refreshChallenge() {
+  try {
+    const j = await apiGet('/api/challenge/status');
+    CHALLENGE = j;
+    renderChallengeBar();
+  } catch(e) {}
+}
+function renderChallengeBar() {
+  // If you have a home-screen challenge widget, render it here
+  // For now, just update data
+}
+function maybeShowChallengePopup(prevPoints) {
+  const trigger = SETTINGS.challengePointsTrigger || 200;
+  if (!USER || !USER.points) return;
+  if (USER.points <= 0) return;
+  // Don't show if completed today
+  if (CHALLENGE.completed) return;
+  // Show popup every 200 pts earned (cumulative)
+  const milestone = Math.floor(USER.points / trigger) * trigger;
+  const lastMilestone = Number(localStorage.getItem('ucb_lastMilestone') || 0);
+  if (milestone <= lastMilestone) return;
+  if (milestone < trigger) return;
+  localStorage.setItem('ucb_lastMilestone', String(milestone));
+  // Update modal data
+  document.getElementById('challengeAdsCount').textContent = CHALLENGE.adsToday || 0;
+  document.getElementById('challengeProgressBar').style.width = (CHALLENGE.progress || 0) + '%';
+  document.getElementById('challengePct').textContent = (CHALLENGE.progress || 0) + '%';
+  document.getElementById('challengeModal').classList.remove('hidden');
+  sfxLevelUp();
+}
+function closeChallengeModal() {
+  document.getElementById('challengeModal').classList.add('hidden');
+}
+function closeChallengeDoneModal() {
+  document.getElementById('challengeDoneModal').classList.add('hidden');
+  // Refresh confetti celebration
+  if (typeof confettiBurst === 'function') confettiBurst();
+  sfxWin();
+}
+
 // ===== CONFETTI BURST (used on rewards) =====
 function confettiBurst() {
   if (typeof document === 'undefined') return;
@@ -350,6 +392,7 @@ async function claimAd() {
   if (adState.interval) clearInterval(adState.interval);
   if (adState._visHandler) document.removeEventListener('visibilitychange', adState._visHandler);
   closeModal('adModal');
+  const prevPoints = USER ? USER.points : 0;
   try {
     const j = await api('/api/earn/ad/claim', { adToken: adState.adToken });
     USER = j.user; refreshUI();
@@ -359,6 +402,21 @@ async function claimAd() {
     if (typeof confettiBurst === 'function') confettiBurst();
     sfxCoin();
     setTimeout(() => sfxWin(), 100);
+    // Refresh challenge + show popup if earned 200+ pts
+    refreshChallenge().then(() => {
+      maybeShowChallengePopup(prevPoints);
+      // If user just completed the challenge, show celebration
+      if (CHALLENGE.completed && CHALLENGE.progress === 100 && !CHALLENGE._shownDone) {
+        CHALLENGE._shownDone = true;
+        setTimeout(() => {
+          document.getElementById('challengeDoneModal').classList.remove('hidden');
+          if (typeof confettiBurst === 'function') confettiBurst();
+          sfxLevelUp();
+          setTimeout(() => confettiBurst(), 600);
+          setTimeout(() => confettiBurst(), 1200);
+        }, 1500);
+      }
+    });
   } catch (e) { toast('❌ ' + e.message); sfxError(); }
   adState = { adToken: null, startedAt: 0 };
 }

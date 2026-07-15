@@ -181,6 +181,11 @@ app.post('/api/signup', (req, res) => {
     quizDoneToday: 0,
     quizResetAt: now + 86400000,
     spinLastAt: 0,
+    challengeDay: '',               // YYYY-MM-DD
+    challengeAdsToday: 0,           // ads watched today (for challenge)
+    challengeCompleted: false,      // already claimed bonus today
+    challengeBonusAt: 0,            // timestamp of last bonus
+    lastChallengePopupAt: 0,        // throttle popups (1 per 5 min)
     referrals: [],
     referredBy: req.body.refCode || '',
     socialLast: {},  // { platform: timestamp } - 12h cooldown per social
@@ -219,10 +224,39 @@ app.post('/api/login', (req, res) => {
   res.json({ ok: true, token, user });
 });
 
+app.get('/api/challenge/status', auth, (req, res) => {
+  const u = req.user;
+  const today = new Date().toISOString().slice(0, 10);
+  if (u.challengeDay !== today) {
+    u.challengeDay = today;
+    u.challengeAdsToday = 0;
+    u.challengeCompleted = false;
+  }
+  const target = db.settings.challengeAdsTarget || 100;
+  const bonus = db.settings.challengeBonusPoints || 1000;
+  res.json({
+    adsToday: u.challengeAdsToday || 0,
+    target: target,
+    bonus: bonus,
+    completed: !!u.challengeCompleted,
+    progress: Math.min(100, Math.round(((u.challengeAdsToday || 0) / target) * 100))
+  });
+});
+
 app.get('/api/me', auth, (req, res) => {
   req.user.lastActive = Date.now();
   saveDB();
-  res.json({ user: req.user, settings: publicSettings() });
+  res.json({
+    user: req.user,
+    settings: publicSettings(),
+    challenge: {
+      adsToday: req.user.challengeAdsToday || 0,
+      target: db.settings.challengeAdsTarget || 100,
+      bonus: db.settings.challengeBonusPoints || 1000,
+      completed: !!req.user.challengeCompleted,
+      progress: Math.min(100, Math.round(((req.user.challengeAdsToday || 0) / (db.settings.challengeAdsTarget || 100)) * 100))
+    }
+  });
 });
 
 function publicSettings() {
@@ -543,6 +577,32 @@ function addPoints(user, pts, source) {
   user.totalPointsEarned += pts;
   user.xp += pts;
   user.level = 1 + Math.floor(user.xp / 100);
+  // Track ads watched today (for daily challenge)
+  if (source && source.startsWith('ad')) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (user.challengeDay !== today) {
+      user.challengeDay = today;
+      user.challengeAdsToday = 0;
+      user.challengeCompleted = false;
+    }
+    user.challengeAdsToday = (user.challengeAdsToday || 0) + 1;
+  }
+  // Check challenge completion
+  checkChallengeBonus(user);
+}
+
+function checkChallengeBonus(user) {
+  const s = db.settings;
+  const target = s.challengeAdsTarget || 100;
+  const bonus = s.challengeBonusPoints || 1000;
+  if (user.challengeCompleted) return;
+  if ((user.challengeAdsToday || 0) >= target) {
+    user.challengeCompleted = true;
+    user.points += bonus;
+    user.totalPointsEarned += bonus;
+    user.challengeBonusAt = Date.now();
+    saveDB(); // (bonus will appear in next /api/me + transactions)
+  }
 }
 
 // ============ API: REDEEM ============
