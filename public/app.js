@@ -1275,3 +1275,24 @@ function clickInFeedAd() {
   window.open(url, '_blank', 'noopener');
   toast('💎 Opening offer...');
 }
+
+// ===== STOP SOUNDS WHEN APP GOES TO BACKGROUND =====
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Stop any pending spin sounds
+    if (typeof stopSpinSound === 'function') stopSpinSound();
+    // Close AudioContext to silence all tones
+    try { if (_audioCtx) { _audioCtx.close(); _audioCtx = null; } } catch(e) {}
+    // Clear all pending setTimeout for sounds
+    try { clearTimeout(_spinTickInterval); _spinTickInterval = null; } catch(e) {}
+  }
+});
+// Also stop sounds on page hide
+window.addEventListener('pagehide', () => {
+  try { if (_audioCtx) { _audioCtx.close(); _audioCtx = null; } } catch(e) {}
+  try { clearTimeout(_spinTickInterval); _spinTickInterval = null; } catch(e) {}
+});
+// Stop sounds on blur
+window.addEventListener('blur', () => {
+  try { if (_audioCtx) { _audioCtx.close(); _audioCtx = null; } } catch(e) {}
+});
