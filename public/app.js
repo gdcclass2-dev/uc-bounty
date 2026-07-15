@@ -1271,8 +1271,9 @@ function toast(msg) {
 
 // ===== IN-FEED AD CLICK =====
 function clickInFeedAd() {
-  const url = (typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink) ? SETTINGS.monetagLink : 'https://omg10.com/4/11286726';
-  window.open(url, '_blank', 'noopener');
+  // Use offer wall (more reliable than Monetag direct ad which often errors)
+  const offerUrl = (typeof SETTINGS !== 'undefined' && SETTINGS.offerWallLink) ? SETTINGS.offerWallLink : 'https://al5sm.com/click';
+  try { window.open(offerUrl, '_blank', 'noopener'); } catch(e) { window.location.href = offerUrl; }
   toast('💎 Opening offer...');
 }
 
