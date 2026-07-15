@@ -448,32 +448,16 @@ app.post('/api/earn/ad/claim', auth, (req, res) => {
     return res.status(429).json({ error: 'Daily ad limit reached' });
   }
   // Cap daily earnings from ads
-  const cap = (db.settings.dailyAdLimit || 50) * 30; // safety cap (30 pts per ad)
+  const cap = (db.settings.dailyAdLimit || 999999) * 40; // safety cap (40 pts per ad)
   if (u.dailyAdPointTotal >= cap) { delete u._pendingAd; return res.status(429).json({ error: 'Daily ad point cap reached' }); }
   u.adsWatchedToday++;
   // Support 2X multiplier: user watches 2 ads, gets 2x points (we get 2x revenue!)
   const mult = Math.min(2, Math.max(1, parseInt(req.body.multiplier) || 1));
-  // Random reward system with LOTS of variety (10-100 pts, avg ~20)
-  // Each reward feels unique! (10, 13, 15, 17, 20, 23, 25, 27, 30, 35, 40, 50, 75, 100)
-  const roll = Math.random() * 100;
-  let basePts;
-  if (roll < 0.3) basePts = 100;         // 0.3% MEGA JACKPOT! 💎
-  else if (roll < 1) basePts = 75;       // 0.7% huge win
-  else if (roll < 3) basePts = 50;       // 2% jackpot 🎰
-  else if (roll < 7) basePts = 40;       // 4% great
-  else if (roll < 13) basePts = 35;      // 6% awesome
-  else if (roll < 22) basePts = 30;      // 9% nice
-  else if (roll < 33) basePts = 27;      // 11% lucky 27
-  else if (roll < 45) basePts = 25;      // 12% good
-  else if (roll < 56) basePts = 23;      // 11% nice
-  else if (roll < 68) basePts = 20;      // 12% solid
-  else if (roll < 78) basePts = 17;      // 10% lucky 17
-  else if (roll < 87) basePts = 15;      // 9% ok
-  else if (roll < 94) basePts = 13;      // 7% small lucky
-  else basePts = 10;                     // 6% minimum
-  // Premium gets 1.5x base (premium bonus on top of random)
+  // FLAT REWARD: 40 pts per ad (simple + predictable)
+  let basePts = 40;
+  // Premium gets 1.5x base (premium bonus)
   if (u.premium) basePts = Math.round(basePts * 1.5);
-  const pts = basePts * mult;  // 2x multiplies the random
+  const pts = basePts * mult;  // 2x multiplies (80 pts for 2x)
   u.dailyAdPointTotal += pts;
   u.lastAdClaimAt = now;
   delete u._pendingAd;
