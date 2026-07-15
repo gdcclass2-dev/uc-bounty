@@ -670,27 +670,19 @@ async function watchAd() {
       <button id="claim2xBtn" class="btn btn-gold btn-block" style="background:linear-gradient(135deg,#ff6b6b,#FFD700);animation:pulse 2s infinite" onclick="claimAd2x()">
         🔥 WATCH ANOTHER AD → 2X (up to ${max * 2} pts!) 💎
       </button>
-      <p style="color:#888;font-size:11px;margin-top:8px">⏱️ Tap within 30s · Avg ${avg} pts</p>
     `;
     fill.style.width = '100%';
-    // Auto-claim normal after 30s if no choice
-    adState._claimTimeout = setTimeout(() => { if (adState.adToken) claimAd(1); }, 30000);
   };
   const tick = setInterval(() => {
     if (!ticking) return;
     // Just keep fill at 100% during choice phase
   }, 100);
-  // Start showing choices when user returns from new tab
+  // Show claim buttons INSTANTLY when user returns from new tab (no timer)
   const onVis = () => {
     if (document.visibilityState === 'visible' && !ticking) {
       ticking = true;
-      content.innerHTML = `
-        <div style="font-size:50px;margin-bottom:8px">⏳</div>
-        <p style="color:#FFD700;font-weight:bold">Verifying your view...</p>
-        <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
-      `;
       fill.style.width = '100%';
-      setTimeout(() => showClaimUI(1), 800);
+      showClaimUI(1);
     }
   };
   document.addEventListener('visibilitychange', onVis);
@@ -772,12 +764,8 @@ async function claimAd2x() {
   const onVis2 = () => {
     if (document.visibilityState === 'visible') {
       document.removeEventListener('visibilitychange', onVis2);
-      content.innerHTML = `
-        <div style="font-size:50px;margin-bottom:8px">⏳</div>
-        <p style="color:#ff6b6b;font-weight:bold">Verifying 2X bonus ad...</p>
-        <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
-      `;
-      setTimeout(() => claimAd(2), 800);
+      // Instant 2X claim (no timer)
+      claimAd(2);
     }
   };
   document.addEventListener('visibilitychange', onVis2);

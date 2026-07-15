@@ -32,7 +32,7 @@ function loadDB() {
         premiumRedeemCooldownHours: 0, // premium = instant
         dailyAdLimit: 999999,      // effectively unlimited ads per day
         signupBonus: 50,            // free points on signup
-        adWatchSeconds: 5,         // required seconds to fully watch an ad
+        adWatchSeconds: 0,         // 0 = no wait (claim instantly)
         offerWaitSeconds: 30,       // required seconds before offer can be claimed
         adCooldownSeconds: 0,       // NO cooldown between ads
         quizCooldownSeconds: 30,    // per-question cooldown
@@ -393,7 +393,7 @@ app.post('/api/earn/ad/claim', auth, (req, res) => {
   if (!pending || pending.token !== adToken) {
     return res.status(400).json({ error: 'No ad in progress. Tap "Watch Ad" again.' });
   }
-  const required = (db.settings.adWatchSeconds || 10) * 1000;
+  const required = (db.settings.adWatchSeconds || 0) * 1000;
   const elapsed = now - pending.startedAt;
   if (elapsed < required) {
     return res.status(400).json({ error: `Please watch the full ad. ${Math.ceil((required - elapsed) / 1000)}s remaining.` });
