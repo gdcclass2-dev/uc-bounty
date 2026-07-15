@@ -50,8 +50,16 @@ async function api(path, body = {}, needAuth = true) {
 async function apiGet(path) {
   const headers = { 'x-device-id': DEVICE_ID };
   if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
-  const r = await fetch(path, { headers });
-  return r.json();
+  try {
+    const r = await fetch(path, { headers });
+    if (r.status === 401) { doLogout(); throw new Error('Session expired'); }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'API error');
+    return j;
+  } catch (e) {
+    if (e.message.includes('fetch')) throw new Error('Network error');
+    throw e;
+  }
 }
 
 // ===== SCREENS =====
