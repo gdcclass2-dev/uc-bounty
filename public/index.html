@@ -119,40 +119,24 @@
       </button>
     </div>
 
-    <!-- Daily offers -->
-    <h3 class="section-h">HIGH-VALUE OFFERS <span class="hot">🔥</span></h3>
+    <!-- Daily offers (REAL Play Store links) -->
+    <h3 class="section-h">INSTALL & EARN <span class="hot">REAL UC</span></h3>
     <div class="offer-list" id="offerList">
-      <div class="offer-card" onclick="openOffer('game1')">
+      <div class="offer-card offer-card-big" onclick="openGamesModal()">
         <div class="offer-icon">🎮</div>
         <div class="offer-info">
-          <div class="offer-title">Install & Try: Battle Arena</div>
-          <div class="offer-sub">Reach level 5 in this game</div>
+          <div class="offer-title">🎮 135+ Games Available</div>
+          <div class="offer-sub">Install one by one • Earn up to +100 pts each</div>
         </div>
-        <div class="offer-reward">+30</div>
+        <div class="offer-reward">+13,500</div>
       </div>
-      <div class="offer-card" onclick="openOffer('game2')">
-        <div class="offer-icon">⚔️</div>
+      <div class="offer-card" onclick="openMonetagOffers()">
+        <div class="offer-icon">💰</div>
         <div class="offer-info">
-          <div class="offer-title">Install: Shadow Legends</div>
-          <div class="offer-sub">Complete tutorial</div>
+          <div class="offer-title">💰 Real Money Offers (Monetag)</div>
+          <div class="offer-sub">Real installs • Big rewards • Verified</div>
         </div>
-        <div class="offer-reward">+25</div>
-      </div>
-      <div class="offer-card" onclick="openOffer('app3')">
-        <div class="offer-icon">📱</div>
-        <div class="offer-info">
-          <div class="offer-title">Try Premium VPN</div>
-          <div class="offer-sub">Free trial signup</div>
-        </div>
-        <div class="offer-reward">+20</div>
-      </div>
-      <div class="offer-card" onclick="openOffer('survey')">
-        <div class="offer-icon">📋</div>
-        <div class="offer-info">
-          <div class="offer-title">Quick Survey</div>
-          <div class="offer-sub">2 min questionnaire</div>
-        </div>
-        <div class="offer-reward">+15</div>
+        <div class="offer-reward">+UP TO 500</div>
       </div>
     </div>
 
@@ -532,6 +516,32 @@
 <!-- Toast -->
 <div id="toast" class="toast hidden"></div>
 
+<!-- Games Modal (100+ real Play Store games) -->
+<div class="modal hidden" id="gamesModal">
+  <div class="modal-box games-box">
+    <h2>🎮 INSTALL GAMES & EARN</h2>
+    <p class="hint" style="color:#FF9800;font-weight:bold;margin:8px 0">
+      ⚠️ You MUST install each game to claim points! <br>
+      🗑️ You can delete the game after you get your points.
+    </p>
+    <div class="games-stats">
+      <span>📦 Total: <b id="gamesTotalCount">0</b> games</span>
+      <span>✅ Claimed: <b id="gamesClaimedCount">0</b></span>
+    </div>
+    <div class="games-filters">
+      <button class="filter-btn active" data-filter="all" onclick="filterGames('all', this)">All</button>
+      <button class="filter-btn" data-filter="battleroyale" onclick="filterGames('battleroyale', this)">Battle</button>
+      <button class="filter-btn" data-filter="racing" onclick="filterGames('racing', this)">Racing</button>
+      <button class="filter-btn" data-filter="puzzle" onclick="filterGames('puzzle', this)">Puzzle</button>
+      <button class="filter-btn" data-filter="action" onclick="filterGames('action', this)">Action</button>
+      <button class="filter-btn" data-filter="strategy" onclick="filterGames('strategy', this)">Strategy</button>
+    </div>
+    <div class="games-list" id="gamesList"></div>
+    <button class="btn btn-ghost btn-block" onclick="closeGamesModal()">CLOSE</button>
+  </div>
+</div>
+
+<script src="games.js"></script>
 <script src="app.js"></script>
 
 <!-- Monetag In-Page Push (small top notification) -->

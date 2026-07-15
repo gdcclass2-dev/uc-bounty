@@ -460,6 +460,66 @@ app.post('/api/earn/offer/claim', auth, (req, res) => {
   res.json({ ok: true, points: pts, user: u });
 });
 
+
+// INSTALL GAME (real Play Store offers): start + claim
+const INSTALL_DAILY_CAP = 5;     // max 5 installs per day per user
+const INSTALL_WAIT_SECONDS = 30;  // must wait 30s before claiming
+app.post('/api/earn/install/start', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  const now = Date.now();
+  resetDailyCounters(u);
+  // daily cap
+  if ((u.installsToday || 0) >= INSTALL_DAILY_CAP) {
+    return res.status(429).json({ error: 'Daily install limit reached (' + INSTALL_DAILY_CAP + '/day). Try again tomorrow!' });
+  }
+  // already installed this game?
+  const pkg = String(req.body.pkg || '');
+  if (u.installedGames && u.installedGames.includes(pkg)) {
+    return res.status(400).json({ error: 'You already installed this game' });
+  }
+  const installToken = crypto.randomBytes(16).toString('hex');
+  u._pendingInstall = { token: installToken, startedAt: now, pkg };
+  saveDB();
+  res.json({ ok: true, installToken, startedAt: now, waitSeconds: INSTALL_WAIT_SECONDS });
+});
+
+app.post('/api/earn/install/claim', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  const now = Date.now();
+  resetDailyCounters(u);
+  const { installToken, pkg, name, pts } = req.body;
+  const pending = u._pendingInstall;
+  if (!pending || pending.token !== installToken) {
+    return res.status(400).json({ error: 'No install in progress. Tap INSTALL again.' });
+  }
+  const required = INSTALL_WAIT_SECONDS * 1000;
+  const elapsed = now - pending.startedAt;
+  if (elapsed < required) {
+    return res.status(400).json({ error: 'Verifying... ' + Math.ceil((required - elapsed) / 1000) + 's remaining. Install the game first!' });
+  }
+  // daily cap
+  if ((u.installsToday || 0) >= INSTALL_DAILY_CAP) {
+    delete u._pendingInstall; saveDB();
+    return res.status(429).json({ error: 'Daily install limit reached' });
+  }
+  // already installed?
+  if (u.installedGames && u.installedGames.includes(pending.pkg)) {
+    delete u._pendingInstall; saveDB();
+    return res.status(400).json({ error: 'You already installed this game' });
+  }
+  // award points
+  const reward = Math.min(200, Math.max(10, parseInt(pts) || 100));
+  u.installsToday = (u.installsToday || 0) + 1;
+  if (!u.installedGames) u.installedGames = [];
+  u.installedGames.push(pending.pkg);
+  delete u._pendingInstall;
+  addPoints(u, reward, 'install:' + (name || pending.pkg));
+  saveDB();
+  res.json({ ok: true, points: reward, user: u, installsToday: u.installsToday, installsLeft: Math.max(0, INSTALL_DAILY_CAP - u.installsToday) });
+});
+
 app.post('/api/earn/game', auth, (req, res) => {
   const u = req.user;
   const { score } = req.body;
