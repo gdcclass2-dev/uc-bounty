@@ -1,5 +1,5 @@
 // UC Bounty service worker - clean offline cache (no ads)
-const CACHE = 'uc-bounty-v5';
+const CACHE = 'uc-bounty-v6';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/admin.html'];
 
 self.addEventListener('install', (e) => {

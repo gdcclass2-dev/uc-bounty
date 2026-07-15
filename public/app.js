@@ -197,6 +197,36 @@ function refreshWallet() {
   }
 }
 
+// ===== CONFETTI BURST (used on rewards) =====
+function confettiBurst() {
+  if (typeof document === 'undefined') return;
+  const colors = ['#FFD700', '#00E5FF', '#00ff88', '#ff6b6b', '#a78bfa', '#fbbf24'];
+  const count = 60;
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;overflow:hidden';
+  document.body.appendChild(container);
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    const size = 6 + Math.random() * 8;
+    const x = 50 + (Math.random() - 0.5) * 60;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const rot = Math.random() * 360;
+    const dur = 1.5 + Math.random() * 1.2;
+    const delay = Math.random() * 0.3;
+    piece.style.cssText = `
+      position:absolute;
+      top:50%;left:${x}%;
+      width:${size}px;height:${size * 0.4}px;
+      background:${color};
+      transform:translate(-50%,-50%) rotate(${rot}deg);
+      border-radius:2px;
+      animation:confettiFall ${dur}s ease-out ${delay}s forwards;
+    `;
+    container.appendChild(piece);
+  }
+  setTimeout(() => { try { container.remove(); } catch(e){} }, 3500);
+}
+
 // ===== EARN: AD (server-side timing) =====
 let adState = { adToken: null, startedAt: 0, totalSeconds: 10 };
 async function watchAd() {
@@ -237,17 +267,39 @@ async function watchAd() {
   try { window.open(_adUrl, '_blank'); } catch(e) {}
   fill.style.width = '0%';
   claim.classList.add('hidden');
+  // Show "Verifying your view..." with spinner for 1s
+  content.innerHTML = `
+    <div style="font-size:50px;margin-bottom:8px">⏳</div>
+    <p style="color:#FFD700;font-weight:bold">Verifying your view...</p>
+    <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
+  `;
+  // Wait until user returns to app, then 1s "verifying" then auto-claim
   let elapsed = 0;
+  let ticking = false;  // only start counting when user is back on app
   const tick = setInterval(() => {
-    elapsed += 0.1;
+    if (!ticking) return;
+    elapsed += 0.05;
     fill.style.width = Math.min(100, (elapsed / adState.totalSeconds) * 100) + '%';
     if (elapsed >= adState.totalSeconds) {
       clearInterval(tick);
-      claim.classList.remove('hidden');
-      content.innerHTML = '<div style="font-size:60px">✅</div><p>Ad completed! Tap "Claim" to get points.</p>';
+      // Auto-claim immediately
+      claimAd();
     }
-  }, 100);
-  // Store for claimAd
+  }, 50);
+  // Start counting only when user returns from new tab
+  const onVis = () => {
+    if (document.visibilityState === 'visible' && !ticking) {
+      ticking = true;
+      elapsed = 0;
+      content.innerHTML = `
+        <div style="font-size:50px;margin-bottom:8px">⏳</div>
+        <p style="color:#FFD700;font-weight:bold">Verifying your view...</p>
+        <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
+      `;
+    }
+  };
+  document.addEventListener('visibilitychange', onVis);
+  adState._visHandler = onVis;
   adState.interval = tick;
 }
 async function watchAdLong() {
@@ -256,12 +308,15 @@ async function watchAdLong() {
 }
 async function claimAd() {
   if (adState.interval) clearInterval(adState.interval);
+  if (adState._visHandler) document.removeEventListener('visibilitychange', adState._visHandler);
   closeModal('adModal');
   try {
     const j = await api('/api/earn/ad/claim', { adToken: adState.adToken });
     USER = j.user; refreshUI();
     pushTx('Watched ad', j.points);
     toast('+' + j.points + ' pts!');
+    // 🎉 Confetti celebration!
+    if (typeof confettiBurst === 'function') confettiBurst();
   } catch (e) { toast('❌ ' + e.message); }
   adState = { adToken: null, startedAt: 0 };
 }
