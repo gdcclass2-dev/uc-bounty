@@ -372,14 +372,18 @@ app.post('/api/earn/spin', auth, (req, res) => {
   const u = req.user;
   if (u.banned) return res.status(403).json({ error: 'Banned' });
   const now = Date.now();
-  const cooldown = 6 * 3600 * 1000; // 6 hours
-  if (now - u.spinLastAt < cooldown && !u.premium) return res.status(429).json({ error: 'Spin cooldown' });
+  // Daily spin limit: 3 for free, 10 for premium
+  const today = new Date().toISOString().slice(0, 10);
+  if (u.spinDay !== today) { u.spinDay = today; u.spinsToday = 0; }
+  const maxSpins = u.premium ? 10 : (db.settings.spinsPerDay || 3);
+  if (u.spinsToday >= maxSpins) return res.status(429).json({ error: 'Daily spin limit reached (' + maxSpins + '/day). Try again tomorrow!' });
+  u.spinsToday++;
   u.spinLastAt = now;
   const rewards = db.settings.spinRewards;
   const reward = rewards[Math.floor(Math.random() * rewards.length)];
   addPoints(u, reward, 'spin');
   saveDB();
-  res.json({ ok: true, points: reward, user: u });
+  res.json({ ok: true, points: reward, user: u, spinsLeft: maxSpins - u.spinsToday });
 });
 
 app.post('/api/earn/checkin', auth, (req, res) => {

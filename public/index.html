@@ -61,9 +61,12 @@
   <!-- Top bar -->
   <header class="topbar">
     <div class="brand-mini">🎯 UC<span>BOUNTY</span></div>
-    <div class="balance-pill" onclick="switchTab('wallet')">
-      <span class="pts-icon">💎</span>
-      <span id="topPoints">0</span> pts
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="sfxToggle" onclick="toggleSfx()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);color:#FFD700;padding:6px 10px;border-radius:8px;font-size:14px;cursor:pointer" title="Toggle sounds">🔊</button>
+      <div class="balance-pill" onclick="switchTab('wallet')">
+        <span class="pts-icon">💎</span>
+        <span id="topPoints">0</span> pts
+      </div>
     </div>
   </header>
 
@@ -388,6 +391,7 @@
       </div>
       <div class="wheel-pointer">▼</div>
     </div>
+    <p id="spinCounter" style="color:#FFD700;font-size:13px;margin:8px 0;font-weight:bold">Spins left: 3/3</p>
     <button class="btn btn-gold btn-block" id="spinGo" onclick="spinNow()">SPIN NOW</button>
     <button class="btn btn-ghost btn-block" onclick="closeModal('spinModal')">Close</button>
   </div>

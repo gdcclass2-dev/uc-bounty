@@ -197,6 +197,46 @@ function refreshWallet() {
   }
 }
 
+// ===== SOUND EFFECTS (Web Audio API, no files needed) =====
+let _audioCtx = null;
+function _ctx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { return null; }
+  }
+  return _audioCtx;
+}
+function playTone(freq, dur, type, vol) {
+  if (window._sfxMuted) return;
+  const c = _ctx(); if (!c) return;
+  try {
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol || 0.15, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start();
+    osc.stop(c.currentTime + dur);
+  } catch(e) {}
+}
+function sfxClick()  { playTone(800, 0.05, 'square', 0.10); }
+function sfxCoin()   { playTone(1200, 0.08, 'sine', 0.18); setTimeout(() => playTone(1600, 0.10, 'sine', 0.18), 60); }
+function sfxWin()    { [0,100,200,300].forEach((d,i) => setTimeout(() => playTone(600 + i*200, 0.15, 'triangle', 0.20), d)); }
+function sfxLose()   { playTone(200, 0.20, 'sawtooth', 0.15); setTimeout(() => playTone(150, 0.25, 'sawtooth', 0.12), 100); }
+function sfxError()  { playTone(300, 0.10, 'square', 0.15); setTimeout(() => playTone(200, 0.15, 'square', 0.12), 80); }
+function sfxSpin()   { playTone(440, 0.05, 'square', 0.10); }
+function sfxSuccess() { [0,80,160].forEach((d,i) => setTimeout(() => playTone(800 + i*200, 0.10, 'sine', 0.18), d)); }
+function sfxLevelUp() { [0,100,200,300,400].forEach((d,i) => setTimeout(() => playTone(500 + i*150, 0.20, 'triangle', 0.22), d)); }
+function toggleSfx() {
+  window._sfxMuted = !window._sfxMuted;
+  try { localStorage.setItem('ucb_sfxMuted', window._sfxMuted ? '1' : '0'); } catch(e) {}
+  const btn = document.getElementById('sfxToggle');
+  if (btn) btn.textContent = window._sfxMuted ? '🔇' : '🔊';
+  if (!window._sfxMuted) sfxClick();
+}
+
 // ===== CONFETTI BURST (used on rewards) =====
 function confettiBurst() {
   if (typeof document === 'undefined') return;
@@ -315,15 +355,33 @@ async function claimAd() {
     USER = j.user; refreshUI();
     pushTx('Watched ad', j.points);
     toast('+' + j.points + ' pts!');
-    // 🎉 Confetti celebration!
+    // 🎉 Confetti + sound celebration!
     if (typeof confettiBurst === 'function') confettiBurst();
-  } catch (e) { toast('❌ ' + e.message); }
+    sfxCoin();
+    setTimeout(() => sfxWin(), 100);
+  } catch (e) { toast('❌ ' + e.message); sfxError(); }
   adState = { adToken: null, startedAt: 0 };
 }
 
 // ===== EARN: SPIN =====
 function doSpin() {
   document.getElementById('spinModal').classList.remove('hidden');
+  updateSpinCounter();
+}
+function updateSpinCounter() {
+  const max = (typeof USER !== 'undefined' && USER.premium) ? 10 : (SETTINGS.spinsPerDay || 3);
+  const used = (typeof USER !== 'undefined' && USER.spinsToday) || 0;
+  const left = Math.max(0, max - used);
+  const el = document.getElementById('spinCounter');
+  if (el) {
+    el.textContent = '🎰 Spins left: ' + left + '/' + max + (USER && USER.premium ? ' (PREMIUM)' : '');
+    el.style.color = left === 0 ? '#ff6b6b' : '#FFD700';
+  }
+  const btn = document.getElementById('spinGo');
+  if (btn) {
+    btn.disabled = left === 0;
+    btn.textContent = left === 0 ? 'NO SPINS LEFT' : 'SPIN NOW';
+  }
 }
 async function spinNow() {
   const btn = document.getElementById('spinGo');
@@ -337,13 +395,19 @@ async function spinNow() {
     const deg = 360 * 5 + (360 - idx * (360 / segs) - (360 / segs) / 2);
     document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
     setTimeout(() => {
+      sfxWin();
       toast('🎰 +' + SPIN_RESULT + ' pts!');
       pushTx('Lucky spin', SPIN_RESULT);
       refreshUI();
+      if (j.spinsLeft !== undefined) {
+        USER.spinsToday = (SETTINGS.spinsPerDay || 3) - j.spinsLeft;
+      }
+      updateSpinCounter();
       btn.disabled = false;
       closeModal('spinModal');
     }, 4200);
   } catch (e) {
+    sfxError();
     toast('❌ ' + e.message);
     btn.disabled = false;
   }
@@ -403,14 +467,17 @@ async function onQuizAnswer(picked, btn) {
     });
     if (j.correct) {
       quizState.score++;
+      sfxSuccess();
       toast('✅ Correct! +' + j.points + ' pts');
     } else {
+      sfxLose();
       toast('❌ Wrong. +' + j.points + ' pts');
     }
     USER = j.user;
     refreshUI();
     setTimeout(() => loadNextQuestion(), 1500);
   } catch (e) {
+    sfxError();
     toast('❌ ' + e.message);
     setTimeout(() => loadNextQuestion(), 1500);
   }
@@ -418,6 +485,7 @@ async function onQuizAnswer(picked, btn) {
 async function finishQuiz() {
   closeModal('quizModal');
   pushTx('Daily quiz (' + quizState.score + ' correct)', quizState.score * 2);
+  sfxLevelUp();
   toast('🧠 Quiz done! ' + quizState.score + ' correct today.');
 }
 
