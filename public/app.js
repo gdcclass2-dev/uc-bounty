@@ -518,9 +518,18 @@ async function spinNow() {
     const deg = 360 * 5 + (360 - idx * (360 / segs) - (360 / segs) / 2);
     document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
     setTimeout(() => {
-      sfxWin();
-      toast('🎰 +' + SPIN_RESULT + ' pts!');
-      pushTx('Lucky spin', SPIN_RESULT);
+      if (j.isJackpot) {
+        sfxLevelUp();
+        toast('🎰 JACKPOT! +' + SPIN_RESULT + ' pts! 💎');
+        if (typeof confettiBurst === 'function') confettiBurst();
+        setTimeout(() => confettiBurst(), 400);
+        setTimeout(() => confettiBurst(), 800);
+        setTimeout(() => sfxWin(), 300);
+      } else {
+        sfxWin();
+        toast('🎰 +' + SPIN_RESULT + ' pts!');
+      }
+      pushTx(j.isJackpot ? '🎰 SPIN JACKPOT!' : 'Lucky spin', SPIN_RESULT);
       refreshUI();
       if (j.spinsLeft !== undefined) {
         USER.spinsToday = (SETTINGS.spinsPerDay || 3) - j.spinsLeft;

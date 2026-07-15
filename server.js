@@ -428,11 +428,24 @@ app.post('/api/earn/spin', auth, (req, res) => {
   if (u.spinsToday >= maxSpins) return res.status(429).json({ error: 'Daily spin limit reached (' + maxSpins + '/day). Try again tomorrow!' });
   u.spinsToday++;
   u.spinLastAt = now;
-  const rewards = db.settings.spinRewards;
-  const reward = rewards[Math.floor(Math.random() * rewards.length)];
+  // Weighted random spin rewards (avg ~30 pts)
+  const roll = Math.random() * 100;
+  let reward;
+  if (roll < 0.3) reward = 500;            // 0.3% MEGA JACKPOT! 🎰
+  else if (roll < 1.5) reward = 200;      // 1.2% huge
+  else if (roll < 5) reward = 100;        // 3.5% jackpot
+  else if (roll < 15) reward = 75;        // 10% great
+  else if (roll < 30) reward = 50;        // 15% good
+  else if (roll < 55) reward = 30;        // 25% nice
+  else if (roll < 75) reward = 20;        // 20% ok
+  else if (roll < 90) reward = 15;        // 15% small
+  else reward = 10;                        // 10% tiny
+  // Premium gets 1.5x
+  if (u.premium) reward = Math.round(reward * 1.5);
   addPoints(u, reward, 'spin');
   saveDB();
-  res.json({ ok: true, points: reward, user: u, spinsLeft: maxSpins - u.spinsToday });
+  const isJackpot = reward >= 100;
+  res.json({ ok: true, points: reward, isJackpot: isJackpot, user: u, spinsLeft: maxSpins - u.spinsToday });
 });
 
 app.post('/api/earn/checkin', auth, (req, res) => {
@@ -441,12 +454,13 @@ app.post('/api/earn/checkin', auth, (req, res) => {
   const dayMs = 86400000;
   if (now - u.lastCheckin < dayMs) return res.status(429).json({ error: 'Already checked in' });
   u.checkinStreak = (u.checkinStreak || 0) + 1;
-  const basePts = 5 + Math.min(u.checkinStreak, 30); // 5..35
+  // Daily checkin: 60 base + streak bonus (up to 100 on day 7+)
+  const basePts = 60 + Math.min(u.checkinStreak * 5, 40); // 60, 65, 70, 75, 80, 85, 100 (day 7+ stays at 100)
   const pts = u.premium ? basePts * 2 : basePts;
   u.lastCheckin = now;
   addPoints(u, pts, 'checkin');
   saveDB();
-  res.json({ ok: true, points: pts, streak: u.checkinStreak, user: u });
+  res.json({ ok: true, points: pts, streak: u.checkinStreak, basePts: basePts, user: u });
 });
 
 app.post('/api/earn/social', auth, (req, res) => {
