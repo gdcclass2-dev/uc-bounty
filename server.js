@@ -75,7 +75,7 @@ function loadDB() {
           { q: "Which scope zooms in the most?", opts: ["2x","4x","6x","8x"], a: 3 },
           { q: "How long does a match of PUBG Mobile typically last?", opts: ["10 min","20 min","30 min","45 min"], a: 2 }
         ],
-        spinRewards: [5, 10, 15, 20, 25, 30, 50, 75, 100]
+        spinRewards: [5, 10, 15, 20, 30, 50, 75, 100, 200]
       }
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(init, null, 2));
@@ -578,23 +578,23 @@ app.post('/api/earn/spin', auth, (req, res) => {
   if (u.spinsToday >= maxSpins) return res.status(429).json({ error: 'Daily spin limit reached (' + maxSpins + '/day). Try again tomorrow!' });
   u.spinsToday++;
   u.spinLastAt = now;
-  // Weighted random spin rewards (avg ~30 pts)
+  // Weighted random spin rewards (must match wheel: 5,10,15,20,30,50,75,100,200)
   const roll = Math.random() * 100;
   let reward;
-  if (roll < 0.3) reward = 500;            // 0.3% MEGA JACKPOT! 🎰
-  else if (roll < 1.5) reward = 200;      // 1.2% huge
-  else if (roll < 5) reward = 100;        // 3.5% jackpot
-  else if (roll < 15) reward = 75;        // 10% great
-  else if (roll < 30) reward = 50;        // 15% good
-  else if (roll < 55) reward = 30;        // 25% nice
-  else if (roll < 75) reward = 20;        // 20% ok
-  else if (roll < 90) reward = 15;        // 15% small
-  else reward = 10;                        // 10% tiny
+  if (roll < 1) reward = 200;        // 1% huge jackpot
+  else if (roll < 5) reward = 100;   // 4% jackpot
+  else if (roll < 15) reward = 75;   // 10% great
+  else if (roll < 30) reward = 50;   // 15% good
+  else if (roll < 50) reward = 30;   // 20% nice
+  else if (roll < 65) reward = 20;   // 15% ok
+  else if (roll < 80) reward = 15;   // 15% small
+  else if (roll < 95) reward = 10;   // 15% tiny
+  else reward = 5;                    // 5% smallest
   // Premium gets 1.5x
   if (u.premium) reward = Math.round(reward * 1.5);
   addPoints(u, reward, 'spin');
   saveDB();
-  const isJackpot = reward >= 100;
+  const isJackpot = reward >= 100 && reward <= 200;
   res.json({ ok: true, points: reward, isJackpot: isJackpot, user: u, spinsLeft: maxSpins - u.spinsToday });
 });
 

@@ -802,21 +802,34 @@ async function spinNow() {
     const j = await api('/api/earn/spin', {});
     SPIN_RESULT = j.points;
     USER = j.user;
-    // Use the 9 wheel segments: 10, 15, 20, 30, 50, 75, 100, 200, jackpot(500)
-    const wheelValues = [5, 10, 15, 20, 25, 30, 50, 75, 100];
-    // Find closest matching segment
-    let idx = 0;
-    let minDiff = Infinity;
-    for (let i = 0; i < wheelValues.length; i++) {
-      const diff = Math.abs(wheelValues[i] - SPIN_RESULT);
-      if (diff < minDiff) { minDiff = diff; idx = i; }
+    // Wheel segments (must match HTML & server): 5, 10, 15, 20, 30, 50, 75, 100, 200
+    const wheelValues = [5, 10, 15, 20, 30, 50, 75, 100, 200];
+    // Find exact matching segment
+    let idx = wheelValues.indexOf(SPIN_RESULT);
+    if (idx < 0) {
+      // Fallback: closest
+      let minDiff = Infinity;
+      for (let i = 0; i < wheelValues.length; i++) {
+        const diff = Math.abs(wheelValues[i] - SPIN_RESULT);
+        if (diff < minDiff) { minDiff = diff; idx = i; }
+      }
     }
     const segs = wheelValues.length;
-    // Reset + spin: ensure each spin rotates (use cumulative rotation)
+    const segAngle = 360 / segs;  // 40 degrees per segment
+    // Pointer is at TOP (0deg). Segment idx starts at TOP and goes CLOCKWISE.
+    // We want segment idx to be UNDER the pointer after rotation.
+    // If we rotate wheel by R degrees, the segment originally at angle (idx*40) ends up at angle (idx*40 + R) mod 360.
+    // We want (idx*40 + R) mod 360 = 0
+    // So R = -idx*40 mod 360 = 360 - idx*40
+    // Add full rotations for visual effect
     const baseRot = window._lastSpinRot || 0;
-    // Always rotate forward (use absolute rotation, not modulo)
-    const newRot = baseRot + 360 * 6 + (360 - idx * (360 / segs) - (360 / segs) / 2);
-    window._lastSpinRot = newRot;  // Keep absolute, don't modulo
+    // Random small jitter inside segment so it doesn't always land dead center
+    const jitter = (Math.random() - 0.5) * (segAngle * 0.6);  // ±12 degrees within 40deg segment
+    const targetRot = 360 - (idx * segAngle) + jitter;
+    // Add 6+ full rotations for spinning effect
+    const extraSpins = 6 + Math.floor(Math.random() * 3);  // 6-8 full rotations
+    const newRot = baseRot + (extraSpins * 360) + targetRot - (baseRot % 360);
+    window._lastSpinRot = newRot;
     const wheel = document.getElementById('wheel');
     wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.24, 1)';
     wheel.style.transform = `rotate(${newRot}deg)`;
