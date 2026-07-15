@@ -586,10 +586,51 @@ async function submitRedeem() {
 function openPremium() {
   document.getElementById('premModal').classList.remove('hidden');
 }
-async function buyPremium() {
+let _selectedPayMethod = 'jazzcash';
+function selectPayMethod(m, btn) {
+  _selectedPayMethod = m;
+  document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const details = document.getElementById('payDetails');
+  const map = {
+    jazzcash:   { title: '📱 JazzCash',   number: '03XX-XXXXXXX',  name: 'Your Name' },
+    easypaisa:  { title: '📱 Easypaisa',  number: '03XX-XXXXXXX',  name: 'Your Name' },
+    bank:       { title: '🏦 Bank Transfer', number: 'Account: XXXXXX', name: 'Your Name' },
+    card:       { title: '💳 Card / Stripe', number: 'Secure checkout', name: 'Card holder' },
+    usdt:       { title: '💎 USDT (TRC20)', number: 'TXxxxxxxxxxxx', name: 'Wallet address' },
+    paypal:     { title: '🅿️ PayPal',     number: 'pay@ucbounty.com', name: 'PayPal email' }
+  };
+  const d = map[m];
+  details.innerHTML = '<div class="pay-info">' +
+    '<h4>' + d.title + '</h4>' +
+    '<p>Send <b>PKR 250</b> (≈ $1) to:</p>' +
+    '<div class="pay-number">' + d.number + '</div>' +
+    '<p class="hint">Then enter the Transaction ID (trx id) / reference number below</p>' +
+    '</div>';
+}
+
+async function submitPremiumPayment() {
+  const trx = (document.getElementById('premiumTrxId') || {}).value || '';
+  const sender = (document.getElementById('premiumSenderName') || {}).value || '';
+  if (!trx || trx.length < 4) return toast('⚠️ Enter Transaction ID');
+  if (!sender) return toast('⚠️ Enter your name');
+  try {
+    const j = await api('/api/premium/payment', {
+      method: _selectedPayMethod, trxId: trx.trim(), senderName: sender.trim(), amount: 250
+    });
+    toast('✅ Payment submitted! Admin will verify within 24h.');
+    closeModal('payModal');
+    if (j && j.request) pushTx('Premium: pending', 0);
+  } catch(e) {
+    toast('❌ ' + (e.message || 'Failed to submit'));
+  }
+}
+
+function buyPremium() {
   closeModal('premModal');
-  toast('💎 Premium activation via UPI/Crypto. Contact admin on WhatsApp.');
-  window.open('https://wa.me/?text=Hi%2C%20I%20want%20UC%20Bounty%20Premium', '_blank');
+  _selectedPayMethod = 'jazzcash';
+  document.getElementById('payModal').classList.remove('hidden');
+  setTimeout(() => selectPayMethod('jazzcash', document.querySelector(".pay-method[data-method='jazzcash']")), 100);
 }
 
 // ===== REFERRAL =====

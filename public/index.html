@@ -497,9 +497,35 @@
       <li>✅ Daily bonus +200 pts</li>
       <li>✅ Priority support</li>
     </ul>
-    <div class="prem-price">₹99 <small>/ month</small></div>
+    <div class="prem-price">PKR 250 <small>/ month</small></div>
     <button class="btn btn-gold btn-block" onclick="buyPremium()">ACTIVATE NOW</button>
     <button class="btn btn-ghost btn-block" onclick="closeModal('premModal')">Maybe later</button>
+  </div>
+</div>
+
+<!-- Payment Modal (premium activation) -->
+<div class="modal hidden" id="payModal">
+  <div class="modal-box pay-box">
+    <h2>💎 ACTIVATE PREMIUM</h2>
+    <p class="hint" style="color:#FFD700;margin-bottom:12px">Send <b>PKR 250</b> via any method below, then submit your Transaction ID.</p>
+    <div class="pay-methods">
+      <button class="pay-method active" data-method="jazzcash" onclick="selectPayMethod('jazzcash', this)">📱 JazzCash</button>
+      <button class="pay-method" data-method="easypaisa" onclick="selectPayMethod('easypaisa', this)">📱 Easypaisa</button>
+      <button class="pay-method" data-method="bank" onclick="selectPayMethod('bank', this)">🏦 Bank</button>
+      <button class="pay-method" data-method="card" onclick="selectPayMethod('card', this)">💳 Card</button>
+      <button class="pay-method" data-method="usdt" onclick="selectPayMethod('usdt', this)">💎 USDT</button>
+      <button class="pay-method" data-method="paypal" onclick="selectPayMethod('paypal', this)">🅿️ PayPal</button>
+    </div>
+    <div id="payDetails" class="pay-details"></div>
+    <div class="pay-form">
+      <label>Your Name</label>
+      <input id="premiumSenderName" type="text" placeholder="Name on your account" class="pay-input">
+      <label>Transaction ID / Reference / TxHash</label>
+      <input id="premiumTrxId" type="text" placeholder="e.g. 1234567890" class="pay-input">
+      <button class="btn btn-gold btn-block" onclick="submitPremiumPayment()">SUBMIT PAYMENT</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal('payModal')">Cancel</button>
+      <p class="hint" style="margin-top:8px">⏰ Admin verifies within 24h. You'll get 💎 badge + 2000 bonus points!</p>
+    </div>
   </div>
 </div>
 

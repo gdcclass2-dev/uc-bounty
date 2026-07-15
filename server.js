@@ -609,6 +609,67 @@ app.get('/api/leaderboard', (req, res) => {
 });
 
 // ============ API: ADMIN ============
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
+});
+
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   if (password !== db.settings.adminPassword) return res.status(403).json({ error: 'Wrong password' });
@@ -639,6 +700,67 @@ app.get('/api/admin/redeems', adminAuth, (req, res) => {
   res.json({ redeems: db.redeemRequests.sort((a, b) => b.createdAt - a.createdAt) });
 });
 
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
+});
+
 app.post('/api/admin/redeem/update', adminAuth, (req, res) => {
   const { id, status } = req.body;
   const r = db.redeemRequests.find(x => x.id === id);
@@ -647,6 +769,67 @@ app.post('/api/admin/redeem/update', adminAuth, (req, res) => {
   r.paidAt = status === 'paid' ? Date.now() : null;
   saveDB();
   res.json({ ok: true, request: r });
+});
+
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
 });
 
 app.post('/api/admin/user/update', adminAuth, (req, res) => {
@@ -661,6 +844,67 @@ app.post('/api/admin/user/update', adminAuth, (req, res) => {
   res.json({ ok: true, user: u });
 });
 
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
+});
+
 app.post('/api/admin/settings', adminAuth, (req, res) => {
   const allowed = ['pointsPerUc','ucPerRedeem','minPointsToRedeem','freeRedeemCooldownHours',
     'premiumRedeemCooldownHours','dailyAdLimit','signupBonus','adsterraLink','monetagLink','offerWallLink',
@@ -671,6 +915,67 @@ app.post('/api/admin/settings', adminAuth, (req, res) => {
   res.json({ ok: true, settings: publicSettings() });
 });
 
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
+});
+
 app.post('/api/admin/announce', adminAuth, (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Empty' });
@@ -678,6 +983,67 @@ app.post('/api/admin/announce', adminAuth, (req, res) => {
   if (db.settings.announcements.length > 10) db.settings.announcements.length = 10;
   saveDB();
   res.json({ ok: true });
+});
+
+
+// ===== PREMIUM PAYMENT REQUESTS =====
+app.post('/api/premium/payment', auth, (req, res) => {
+  const u = req.user;
+  if (u.banned) return res.status(403).json({ error: 'Banned' });
+  if (u.premium) return res.status(400).json({ error: 'You already have Premium' });
+  const { method, trxId, senderName, amount } = req.body;
+  if (!method || !trxId || !senderName) return res.status(400).json({ error: 'Missing fields' });
+  if (String(trxId).trim().length < 4) return res.status(400).json({ error: 'Invalid Transaction ID' });
+  const validMethods = ['jazzcash','easypaisa','bank','card','usdt','paypal'];
+  if (!validMethods.includes(method)) return res.status(400).json({ error: 'Invalid payment method' });
+  if (!db.premiumRequests) db.premiumRequests = [];
+  // prevent duplicate trxId
+  if (db.premiumRequests.find(r => r.trxId === trxId.trim() && r.status === 'pending')) {
+    return res.status(400).json({ error: 'This Transaction ID is already pending' });
+  }
+  const req2 = {
+    id: crypto.randomBytes(8).toString('hex'),
+    username: u.username,
+    deviceId: u.deviceId,
+    method, trxId: trxId.trim(), senderName: senderName.trim(),
+    amount: parseInt(amount) || 250,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.premiumRequests.push(req2);
+  saveDB();
+  res.json({ ok: true, request: req2 });
+});
+
+app.get('/api/admin/premium', adminAuth, (req, res) => {
+  res.json({ requests: db.premiumRequests || [] });
+});
+
+app.post('/api/admin/premium/update', adminAuth, (req, res) => {
+  const { id, action } = req.body;
+  if (!db.premiumRequests) return res.status(404).json({ error: 'No requests' });
+  const r = db.premiumRequests.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Request not found' });
+  if (action === 'approve') {
+    // find user by deviceId and set premium
+    const u = db.users.find(x => x.deviceId === r.deviceId);
+    if (u) {
+      u.premium = true;
+      u.premiumSince = Date.now();
+      addPoints(u, 2000, 'premium-activation-bonus');
+    }
+    r.status = 'approved';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else if (action === 'reject') {
+    r.status = 'rejected';
+    r.resolvedAt = Date.now();
+    saveDB();
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Invalid action' });
+  }
 });
 
 app.post('/api/admin/change-password', adminAuth, (req, res) => {
