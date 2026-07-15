@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>UC Bounty - Earn Real UC</title>
+<title>Free UC Earner - Earn Real UC</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 </head>
@@ -44,9 +44,9 @@
 <div id="splash" class="screen active">
   <div class="parachute">🪂</div>
   <div class="logo-big">
-    <div class="crosshair">🎯</div>
-    <h1 class="brand">UC <span>BOUNTY</span></h1>
-    <p class="tagline">HUNT ADS • EARN UC • CLAIM BOUNTY</p>
+    <img src="logo.svg" alt="Free UC Earner" style="width:140px;height:140px;filter:drop-shadow(0 8px 24px rgba(255,215,0,0.5));animation:logoSpin 8s linear infinite;margin:0 auto 12px;display:block"/>
+    <h1 class="brand">FREE UC <span>EARNER</span></h1>
+    <p class="tagline">WATCH ADS • EARN UC • INSTANT PAYOUT</p>
   </div>
   <div class="loading-bar"><div class="loading-fill"></div></div>
   <p class="splash-foot">v1.0 • For PUBG Mobile players</p>
@@ -82,7 +82,10 @@
 
   <!-- Top bar -->
   <header class="topbar">
-    <div class="brand-mini">🎯 UC<span>BOUNTY</span></div>
+    <div class="brand-mini" style="display:flex;align-items:center;gap:6px">
+      <img src="logo.svg" alt="" style="width:28px;height:28px;border-radius:6px"/>
+      <span style="font-weight:900">FREE UC<span style="color:#FFD700">EARNER</span></span>
+    </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button id="sfxToggle" onclick="toggleSfx()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.3);color:#FFD700;padding:6px 10px;border-radius:8px;font-size:14px;cursor:pointer" title="Toggle sounds">🔊</button>
       <div class="balance-pill" onclick="switchTab('wallet')">
@@ -383,7 +386,7 @@
         <div class="prof-arrow">›</div>
       </div>
     </div>
-    <p class="version">UC Bounty v1.0.0</p>
+    <p class="version">Free UC Earner v1.0.0</p>
   </div>
 
   <!-- Bottom nav -->

@@ -747,3 +747,12 @@ input, textarea { outline: none; border: none; }
   border-color: #FFD700;
 }
 .pay-box { max-height: 90vh; overflow-y: auto; }
+
+/* Logo spin animation for splash */
+@keyframes logoSpin { 
+  from { transform: rotate(0deg); } 
+  to { transform: rotate(360deg); } 
+}
+/* Logo pulse on hover (for header) */
+.brand-mini img { transition: transform 0.3s; }
+.brand-mini:hover img { transform: scale(1.15) rotate(15deg); }

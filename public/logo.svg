@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Background gradient: deep purple to gold to royal blue -->
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="40%" stop-color="#FF6B35"/>
+      <stop offset="100%" stop-color="#1a0033"/>
+    </radialGradient>
+    <!-- Gold gradient for UC letters -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8DC"/>
+      <stop offset="30%" stop-color="#FFD700"/>
+      <stop offset="60%" stop-color="#FFA500"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+    <!-- Gold shine highlight -->
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Shadow -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="0" y="0" width="200" height="200" rx="40" fill="url(#bg)"/>
+
+  <!-- Decorative stars -->
+  <g opacity="0.4" fill="#ffffff">
+    <circle cx="30" cy="35" r="1.5"/>
+    <circle cx="170" cy="50" r="1"/>
+    <circle cx="40" cy="160" r="1.2"/>
+    <circle cx="165" cy="155" r="1.5"/>
+    <circle cx="25" cy="100" r="1"/>
+    <circle cx="180" cy="100" r="1"/>
+  </g>
+
+  <!-- Golden coin ring (behind UC) -->
+  <circle cx="100" cy="100" r="62" fill="none" stroke="url(#gold)" stroke-width="3" opacity="0.5" filter="url(#glow)"/>
+
+  <!-- UC letters (big, bold, golden) -->
+  <g filter="url(#shadow)">
+    <text x="100" y="115" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="78" fill="url(#gold)" stroke="#B8860B" stroke-width="2">UC</text>
+  </g>
+
+  <!-- Shine on top of UC -->
+  <text x="100" y="95" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="78" fill="url(#shine)" opacity="0.4">UC</text>
+
+  <!-- Star sparkles around UC -->
+  <g fill="#FFD700" filter="url(#glow)">
+    <path d="M 50 60 L 53 67 L 60 67 L 54 71 L 57 78 L 50 73 L 43 78 L 46 71 L 40 67 L 47 67 Z" transform="scale(0.6) translate(30 30)"/>
+    <path d="M 150 60 L 153 67 L 160 67 L 154 71 L 157 78 L 150 73 L 143 78 L 146 71 L 140 67 L 147 67 Z" transform="scale(0.5) translate(150 50)"/>
+    <path d="M 50 140 L 53 147 L 60 147 L 54 151 L 57 158 L 50 153 L 43 158 L 46 151 L 40 147 L 47 147 Z" transform="scale(0.55) translate(40 100)"/>
+    <path d="M 150 140 L 153 147 L 160 147 L 154 151 L 157 158 L 150 153 L 143 158 L 146 151 L 140 147 L 147 147 Z" transform="scale(0.5) translate(155 130)"/>
+  </g>
+
+  <!-- Small dollar/sparkle at top -->
+  <text x="100" y="38" text-anchor="middle" font-size="20" fill="#FFD700" filter="url(#glow)">✦</text>
+</svg>

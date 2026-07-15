@@ -448,14 +448,14 @@ function copyInviteLink() {
 function shareWhatsApp() {
   const code = document.getElementById('inviteCodeText').textContent;
   const link = document.getElementById('inviteLinkInput').value;
-  const msg = encodeURIComponent('🎁 Join me on UC Bounty and earn free UC for PUBG!\n\nUse my invite code: ' + code + '\nDownload: ' + link + '\n\nYou get 50 pts signup bonus + we both get 500 pts when you earn 100 pts! 💎');
+  const msg = encodeURIComponent('🎁 Join me on Free UC Earner and earn free UC for PUBG!\n\nUse my invite code: ' + code + '\nDownload: ' + link + '\n\nYou get 50 pts signup bonus + we both get 500 pts when you earn 100 pts! 💎');
   window.open('https://wa.me/?text=' + msg, '_blank');
   sfxCoin();
 }
 function shareTelegram() {
   const code = document.getElementById('inviteCodeText').textContent;
   const link = document.getElementById('inviteLinkInput').value;
-  const msg = encodeURIComponent('🎁 Join UC Bounty - earn UC for PUBG!\n\nInvite code: ' + code + '\n' + link);
+  const msg = encodeURIComponent('🎁 Join Free UC Earner - earn UC for PUBG!\n\nInvite code: ' + code + '\n' + link);
   window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + msg, '_blank');
   sfxCoin();
 }
@@ -1187,9 +1187,9 @@ function selectPayMethod(m, btn) {
   if (btn) btn.classList.add('active');
   const details = document.getElementById('payDetails');
   const map = {
-    jazzcash:   { title: '📱 JazzCash',   number: '03470964126',  name: 'UC Bounty' },
-    easypaisa:  { title: '📱 Easypaisa',  number: '03470964126',  name: 'UC Bounty' },
-    bank:       { title: '🏦 Bank Transfer', number: 'Contact admin', name: 'UC Bounty' },
+    jazzcash:   { title: '📱 JazzCash',   number: '03470964126',  name: 'Free UC Earner' },
+    easypaisa:  { title: '📱 Easypaisa',  number: '03470964126',  name: 'Free UC Earner' },
+    bank:       { title: '🏦 Bank Transfer', number: 'Contact admin', name: 'Free UC Earner' },
     card:       { title: '💳 Card / Stripe', number: 'Secure checkout (coming soon)', name: 'Card holder' },
     usdt:       { title: '💎 USDT (TRC20)', number: 'Contact admin on WhatsApp', name: 'Wallet address' },
     paypal:     { title: '🅿️ PayPal',     number: 'Coming soon', name: 'PayPal email' }
@@ -1233,7 +1233,7 @@ function openReferral() {
   USER.referralCode = code;
   const url = location.origin + '?ref=' + code;
   if (navigator.share) {
-    navigator.share({ title: 'UC Bounty', text: 'Join me on UC Bounty and earn real UC!', url });
+    navigator.share({ title: 'Free UC Earner', text: 'Join me on Free UC Earner and earn real UC!', url });
   } else {
     navigator.clipboard.writeText(url);
     toast('📋 Link copied: ' + url);
