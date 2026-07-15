@@ -24,7 +24,7 @@ function loadDB() {
         minPointsToRedeem: 6000,    // unlock threshold
         freeRedeemCooldownHours: 3, // free user cooldown
         premiumRedeemCooldownHours: 0, // premium = instant
-        dailyAdLimit: 50,           // max ads per day per user
+        dailyAdLimit: 999999,      // effectively unlimited ads per day
         signupBonus: 50,            // free points on signup
         adWatchSeconds: 5,         // required seconds to fully watch an ad
         offerWaitSeconds: 30,       // required seconds before offer can be claimed
