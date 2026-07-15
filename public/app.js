@@ -355,29 +355,44 @@ async function watchAd() {
     <p style="color:#FFD700;font-weight:bold">Verifying your view...</p>
     <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
   `;
-  // Wait until user returns to app, then 1s "verifying" then auto-claim
-  let elapsed = 0;
-  let ticking = false;  // only start counting when user is back on app
+  // Wait until user returns to app, then show CLAIM vs 2X buttons
+  let ticking = false;
+  let adCount = 0;  // 0 = first ad done, 1 = 2x pending
+  // Show CLAIM / 2X buttons instead of auto-claim
+  const showClaimUI = (mult) => {
+    adState.multiplier = mult;
+    const pts = (USER.premium ? 60 : 30) * mult;
+    content.innerHTML = `
+      <div style="font-size:60px;margin-bottom:6px">✅</div>
+      <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:4px 0">Ad verified!</p>
+      <p style="color:#aaa;font-size:12px;margin:2px 0 12px 0">Choose how to claim:</p>
+      <button id="claimNormalBtn" class="btn btn-ghost btn-block" style="margin-bottom:8px" onclick="claimAd(1)">
+        💰 CLAIM +${pts} pts
+      </button>
+      <button id="claim2xBtn" class="btn btn-gold btn-block" style="background:linear-gradient(135deg,#ff6b6b,#FFD700);animation:pulse 2s infinite" onclick="claimAd2x()">
+        🔥 WATCH ANOTHER AD → 2X = +${pts * 2} pts!
+      </button>
+      <p style="color:#888;font-size:11px;margin-top:8px">⏱️ Tap within 30s or it auto-claims normal</p>
+    `;
+    fill.style.width = '100%';
+    // Auto-claim normal after 30s if no choice
+    adState._claimTimeout = setTimeout(() => { if (adState.adToken) claimAd(1); }, 30000);
+  };
   const tick = setInterval(() => {
     if (!ticking) return;
-    elapsed += 0.05;
-    fill.style.width = Math.min(100, (elapsed / adState.totalSeconds) * 100) + '%';
-    if (elapsed >= adState.totalSeconds) {
-      clearInterval(tick);
-      // Auto-claim immediately
-      claimAd();
-    }
-  }, 50);
-  // Start counting only when user returns from new tab
+    // Just keep fill at 100% during choice phase
+  }, 100);
+  // Start showing choices when user returns from new tab
   const onVis = () => {
     if (document.visibilityState === 'visible' && !ticking) {
       ticking = true;
-      elapsed = 0;
       content.innerHTML = `
         <div style="font-size:50px;margin-bottom:8px">⏳</div>
         <p style="color:#FFD700;font-weight:bold">Verifying your view...</p>
         <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
       `;
+      fill.style.width = '100%';
+      setTimeout(() => showClaimUI(1), 800);
     }
   };
   document.addEventListener('visibilitychange', onVis);
@@ -388,24 +403,25 @@ async function watchAdLong() {
   // For long ad: still same anti-fraud flow, just different reward
   return watchAd();
 }
-async function claimAd() {
+async function claimAd(mult) {
   if (adState.interval) clearInterval(adState.interval);
   if (adState._visHandler) document.removeEventListener('visibilitychange', adState._visHandler);
+  if (adState._claimTimeout) clearTimeout(adState._claimTimeout);
   closeModal('adModal');
   const prevPoints = USER ? USER.points : 0;
   try {
-    const j = await api('/api/earn/ad/claim', { adToken: adState.adToken });
+    const j = await api('/api/earn/ad/claim', { adToken: adState.adToken, multiplier: mult || 1 });
     USER = j.user; refreshUI();
-    pushTx('Watched ad', j.points);
-    toast('+' + j.points + ' pts!');
+    pushTx('Watched ad' + (mult > 1 ? ' (2X)' : ''), j.points);
+    toast('+' + j.points + ' pts' + (mult > 1 ? ' (2X BONUS!)' : '') + '!');
     // 🎉 Confetti + sound celebration!
     if (typeof confettiBurst === 'function') confettiBurst();
     sfxCoin();
     setTimeout(() => sfxWin(), 100);
+    if (mult > 1) setTimeout(() => confettiBurst(), 400);
     // Refresh challenge + show popup if earned 200+ pts
     refreshChallenge().then(() => {
       maybeShowChallengePopup(prevPoints);
-      // If user just completed the challenge, show celebration
       if (CHALLENGE.completed && CHALLENGE.progress === 100 && !CHALLENGE._shownDone) {
         CHALLENGE._shownDone = true;
         setTimeout(() => {
@@ -419,6 +435,44 @@ async function claimAd() {
     });
   } catch (e) { toast('❌ ' + e.message); sfxError(); }
   adState = { adToken: null, startedAt: 0 };
+}
+
+async function claimAd2x() {
+  // User chose 2X: open another ad first, then claim 2x
+  if (adState._claimTimeout) clearTimeout(adState._claimTimeout);
+  // Disable the 2x button to prevent double-click
+  const btn2x = document.getElementById('claim2xBtn');
+  const btnN = document.getElementById('claimNormalBtn');
+  if (btn2x) { btn2x.disabled = true; btn2x.textContent = '⏳ Opening ad...'; }
+  if (btnN) btnN.disabled = true;
+  // Open another ad in new tab
+  const _adUrl = (typeof SETTINGS !== 'undefined' && SETTINGS.monetagLink && SETTINGS.monetagLink.indexOf('otieu.com') === -1 && SETTINGS.monetagLink.indexOf('javascript') === -1) ? SETTINGS.monetagLink : 'https://omg10.com/4/11286726';
+  try { window.open(_adUrl, '_blank'); } catch(e) {}
+  // Show "watch 2nd ad" hint
+  const content = document.getElementById('adContent');
+  content.innerHTML = `
+    <div style="font-size:60px;margin-bottom:6px;animation:bounce 1s infinite">🔥</div>
+    <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:4px 0">2X BONUS AD OPENED!</p>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #ff6b6b;border-radius:12px;padding:14px;margin:14px 0;animation:pulse 2s infinite">
+      <p style="color:#ff6b6b;font-weight:bold;font-size:15px;margin:0 0 6px 0">👆 TAP THE BACK BUTTON</p>
+      <p style="color:#fff;font-size:13px;margin:0">to claim your <span style="color:#00ff88;font-weight:bold">2X = +${(USER.premium ? 60 : 30) * 2} pts</span></p>
+    </div>
+    <p style="color:#00E5FF;font-size:12px;margin:6px 0">⏱️ Watch the 2nd ad (or skip) then come back</p>
+  `;
+  // Wait for user to return, then claim 2x
+  const onVis2 = () => {
+    if (document.visibilityState === 'visible') {
+      document.removeEventListener('visibilitychange', onVis2);
+      content.innerHTML = `
+        <div style="font-size:50px;margin-bottom:8px">⏳</div>
+        <p style="color:#ff6b6b;font-weight:bold">Verifying 2X bonus ad...</p>
+        <p style="color:#888;font-size:12px;margin-top:8px">Almost done!</p>
+      `;
+      setTimeout(() => claimAd(2), 800);
+    }
+  };
+  document.addEventListener('visibilitychange', onVis2);
+  adState._visHandler2 = onVis2;
 }
 
 // ===== EARN: SPIN =====

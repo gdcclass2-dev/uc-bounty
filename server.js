@@ -323,13 +323,17 @@ app.post('/api/earn/ad/claim', auth, (req, res) => {
   const cap = (db.settings.dailyAdLimit || 50) * 30; // safety cap (30 pts per ad)
   if (u.dailyAdPointTotal >= cap) { delete u._pendingAd; return res.status(429).json({ error: 'Daily ad point cap reached' }); }
   u.adsWatchedToday++;
-  const pts = u.premium ? 60 : 30;  // premium 2x
+  // Support 2X multiplier: user watches 2 ads, gets 2x points (we get 2x revenue!)
+  const mult = Math.min(2, Math.max(1, parseInt(req.body.multiplier) || 1));
+  const basePts = u.premium ? 60 : 30;  // premium 2x base
+  const pts = basePts * mult;  // 2x = 60 free, 120 premium
   u.dailyAdPointTotal += pts;
   u.lastAdClaimAt = now;
   delete u._pendingAd;
-  addPoints(u, pts, 'ad');
+  // Count both ads for daily challenge tracking
+  for (let i = 0; i < mult; i++) addPoints(u, basePts, 'ad');
   saveDB();
-  res.json({ ok: true, points: pts, user: u });
+  res.json({ ok: true, points: pts, multiplier: mult, user: u });
 });
 
 // QUIZ: client submits which question index + answer, server picks daily questions and tracks which are answered
