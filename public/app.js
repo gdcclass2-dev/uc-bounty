@@ -505,6 +505,11 @@ function hideTopBanner() {
   if (b) b.style.display = 'none';
   try { localStorage.setItem('ucb_topBannerHidden', '1'); } catch(e) {}
 }
+function hideBottomBanner() {
+  const b = document.getElementById('bottomBannerAd');
+  if (b) b.style.display = 'none';
+  try { localStorage.setItem('ucb_bottomBannerHidden', '1'); } catch(e) {}
+}
 function rotateBottomBanner() {
   _bottomBannerIdx = (_bottomBannerIdx + 1) % BANNER_OFFERS.length;
   const offer = BANNER_OFFERS[_bottomBannerIdx];

@@ -13,14 +13,11 @@
 </head>
 <body>
 
-<!-- Bottom Sticky Banner Ad (Monetag) -->
-<div id="bottomBannerAd" style="position:fixed;bottom:60px;left:8px;right:8px;z-index:9998;background:linear-gradient(135deg,#2d1b4e,#1a1a2e);padding:8px 12px;border-radius:12px;border:1px solid rgba(0,229,255,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="clickBottomBanner()">
-  <span style="font-size:22px">💰</span>
-  <div style="flex:1;min-width:0">
-    <div style="color:#00E5FF;font-size:10px;font-weight:bold">FREE GIFT INSIDE</div>
-    <div id="bottomBannerText" style="color:#fff;font-size:12px;font-weight:bold">Watch ad → Get +100 pts!</div>
-  </div>
-  <div style="background:#00E5FF;color:#000;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:bold">TAP</div>
+<!-- Bottom Ad Banner (compact, dismissible) -->
+<div id="bottomBannerAd" style="position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:9998;background:linear-gradient(90deg,#1a1a2e,#16213e);padding:6px 12px;border-radius:20px;border:1px solid rgba(0,229,255,0.4);box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;cursor:pointer;max-width:280px" onclick="clickBottomBanner()">
+  <span style="font-size:14px">💰</span>
+  <div id="bottomBannerText" style="color:#fff;font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">Tap to earn +100 pts!</div>
+  <button onclick="event.stopPropagation();hideBottomBanner()" style="background:rgba(255,255,255,0.1);border:0;color:#aaa;padding:0 4px;border-radius:8px;font-size:10px;cursor:pointer;line-height:1">✕</button>
 </div>
 
 <!-- Top Sticky Banner Ad (Monetag direct link) -->

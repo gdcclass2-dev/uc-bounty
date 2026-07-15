@@ -424,27 +424,28 @@ app.post('/api/earn/quiz/start', auth, (req, res) => {
     return res.status(429).json({ error: 'Daily quiz limit reached' });
   }
   // Pick 5 questions for TODAY deterministically by day index
+  // Same 5 questions for everyone today, different each day (from 5000+ bank)
   const dayIdx = Math.floor(now / 86400000);
   const bank = db.settings.quizQuestions || [];
   if (bank.length < 5) return res.status(500).json({ error: 'Not enough quiz questions in bank' });
-  // Shuffle by day (so same 5 questions all day, different each day)
-  const startIdx = (dayIdx * 7) % bank.length;
+  // Seeded shuffle: use day index to pick 5 unique questions for today
+  const startIdx = (dayIdx * 13) % bank.length;
   const todays = [];
-  for (let i = 0; i < 5; i++) todays.push(bank[(startIdx + i) % bank.length]);
+  for (let i = 0; i < 5; i++) todays.push(bank[(startIdx + i * 3) % bank.length]);
   // Exclude already-answered questions today
   const answered = new Set(u.quizAnsweredToday.map(x => x.qHash));
-  const remaining = todays.filter((q, i) => !answered.has(dayIdx + ':' + ((startIdx + i) % bank.length)));
+  const remaining = todays.filter((q, i) => !answered.has(dayIdx + ':' + ((startIdx + i * 3) % bank.length)));
   if (remaining.length === 0) {
     return res.json({ ok: true, question: null, done: true, score: u.quizDoneToday });
   }
   // Take next un-answered
   const q = remaining[0];
   const realIdx = todays.indexOf(q);
-  const qHash = dayIdx + ':' + ((startIdx + realIdx) % bank.length);
+  const qHash = dayIdx + ':' + ((startIdx + realIdx * 3) % bank.length);
   res.json({
     ok: true,
     done: false,
-    question: { q: q.q, opts: q.opts, hash: qHash },
+    question: { q: q.q, opts: q.options || q.opts, hash: qHash, correctAnswer: q.answer },
     cooldown: db.settings.quizCooldownSeconds || 30,
     answeredToday: u.quizAnsweredToday.length,
     limit: db.settings.quizPerDay || 5
@@ -475,13 +476,14 @@ app.post('/api/earn/quiz/answer', auth, (req, res) => {
   const bank = db.settings.quizQuestions || [];
   const q = bank[idx];
   if (!q) return res.status(400).json({ error: 'Invalid question' });
-  const correct = parseInt(picked) === q.a;
+  const opts = q.options || q.opts || [];
+  const correct = opts[picked] === q.answer;
   u.quizDoneToday++;
   u.quizAnsweredToday.push({ qHash, t: now });
-  const pts = correct ? (u.premium ? 4 : 2) : (u.premium ? 1 : 0); // 0 for wrong
+  const pts = correct ? (u.premium ? 4 : 2) : (u.premium ? 1 : 0); // 0 for wrong (free), 1 for premium
   if (pts > 0) addPoints(u, pts, 'quiz');
   saveDB();
-  res.json({ ok: true, correct, points: pts, user: u, correctAnswer: q.a });
+  res.json({ ok: true, correct, points: pts, user: u, correctAnswer: opts.indexOf(q.answer) });
 });
 
 app.post('/api/earn/spin', auth, (req, res) => {
