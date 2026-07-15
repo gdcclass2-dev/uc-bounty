@@ -13,6 +13,31 @@
 </head>
 <body>
 
+<!-- Bottom Sticky Banner Ad (Monetag) -->
+<div id="bottomBannerAd" style="position:fixed;bottom:60px;left:8px;right:8px;z-index:9998;background:linear-gradient(135deg,#2d1b4e,#1a1a2e);padding:8px 12px;border-radius:12px;border:1px solid rgba(0,229,255,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px;cursor:pointer" onclick="clickBottomBanner()">
+  <span style="font-size:22px">💰</span>
+  <div style="flex:1;min-width:0">
+    <div style="color:#00E5FF;font-size:10px;font-weight:bold">FREE GIFT INSIDE</div>
+    <div id="bottomBannerText" style="color:#fff;font-size:12px;font-weight:bold">Watch ad → Get +100 pts!</div>
+  </div>
+  <div style="background:#00E5FF;color:#000;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:bold">TAP</div>
+</div>
+
+<!-- Top Sticky Banner Ad (Monetag direct link) -->
+<div id="topBannerAd" style="position:sticky;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a1a2e,#16213e);padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,215,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.4)">
+  <div id="topBannerContent" style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="clickTopBanner()">
+    <span style="font-size:16px">📢</span>
+    <div style="flex:1;min-width:0">
+      <div style="color:#FFD700;font-size:11px;font-weight:bold;line-height:1.1">🎁 SPONSORED OFFER</div>
+      <div id="topBannerText" style="color:#fff;font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tap to claim bonus rewards!</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:4px">
+    <button onclick="event.stopPropagation();rotateTopBanner()" style="background:rgba(255,215,0,0.2);border:1px solid rgba(255,215,0,0.4);color:#FFD700;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer">↻ NEW</button>
+    <button onclick="event.stopPropagation();hideTopBanner()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#aaa;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer">✕</button>
+  </div>
+</div>
+
 <!-- Animated PUBG background -->
 <div class="bg-grid"></div>
 <div class="bg-particles"></div>
@@ -119,6 +144,11 @@
         <div class="qicon">🔥</div>
         <div class="qtitle">Check-in</div>
         <div class="qpts" id="checkinPts">+5 pts</div>
+      </button>
+      <button class="qcard" onclick="openInvite()" style="background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,229,255,0.1));border:1px solid rgba(0,255,136,0.4)">
+        <div class="qicon">🎁</div>
+        <div class="qtitle">Invite</div>
+        <div class="qpts" style="color:#00ff88">+500 pts</div>
       </button>
     </div>
 
@@ -577,6 +607,49 @@
 
 <!-- Monetag In-Page Push (small top notification) -->
 <script src="https://al5sm.com/pfe/current/tag.min.js?z=11289197" data-zone="11289197" data-ct="2"></script>
+<!-- Invite Friends Modal -->
+<div class="modal hidden" id="inviteModal">
+  <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #00ff88;text-align:center;max-width:380px;padding:18px">
+    <div style="font-size:50px;margin:6px 0;animation:bounce 1s infinite">🎁</div>
+    <h2 style="color:#00ff88;margin:4px 0;font-size:22px">INVITE & EARN 500 PTS!</h2>
+    <p style="color:#aaa;font-size:12px;margin:4px 0 10px 0">For every friend who installs & earns 100 pts</p>
+
+    <div style="background:rgba(0,255,136,0.05);border:2px dashed #00ff88;border-radius:12px;padding:14px;margin:10px 0">
+      <p style="color:#888;font-size:11px;margin:0 0 6px 0">YOUR INVITE CODE</p>
+      <p id="inviteCodeText" style="color:#FFD700;font-weight:bold;font-size:28px;letter-spacing:3px;margin:0;font-family:monospace">LOADING...</p>
+      <button class="btn btn-gold btn-block" style="margin-top:10px" onclick="copyInviteCode()">📋 COPY CODE</button>
+    </div>
+
+    <p style="color:#aaa;font-size:12px;margin:8px 0 6px 0">— OR SHARE LINK —</p>
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin:6px 0;display:flex;gap:6px;align-items:center">
+      <input id="inviteLinkInput" type="text" readonly value="" style="flex:1;background:transparent;border:0;color:#fff;font-size:11px;padding:4px">
+      <button onclick="copyInviteLink()" style="background:#00ff88;color:#000;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;border:0">COPY</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1;background:#25D366;color:#fff;border:0" onclick="shareWhatsApp()">📱 WhatsApp</button>
+      <button class="btn btn-ghost" style="flex:1;background:#0088cc;color:#fff;border:0" onclick="shareTelegram()">✈️ Telegram</button>
+    </div>
+
+    <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;margin:14px 0 8px 0">
+      <div style="display:flex;justify-content:space-around;text-align:center">
+        <div>
+          <p style="color:#FFD700;font-size:24px;font-weight:bold;margin:0" id="inviteCountText">0</p>
+          <p style="color:#888;font-size:10px;margin:0">Friends</p>
+        </div>
+        <div>
+          <p style="color:#00ff88;font-size:24px;font-weight:bold;margin:0" id="inviteEarningsText">0</p>
+          <p style="color:#888;font-size:10px;margin:0">Pts earned</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="inviteHistoryBox" style="max-height:120px;overflow-y:auto;text-align:left"></div>
+
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeModal('inviteModal')">CLOSE</button>
+  </div>
+</div>
+
 <!-- Mega Goal Popup (shows when user has enough to redeem) -->
 <div class="modal hidden" id="megaGoalModal">
   <div class="modal-box" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #FFD700;text-align:center;max-width:380px;padding:18px">

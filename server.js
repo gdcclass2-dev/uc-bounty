@@ -22,6 +22,9 @@ function loadDB() {
         pointsPerUc: 20,            // 20 points = 1 UC (so 6000 pts = 300 UC)
         ucPerRedeem: 300,           // amount of UC per redeem
         minPointsToRedeem: 6000,    // unlock threshold
+        inviteBonusPoints: 500,    // pts per successful invite
+        inviteMinPts: 100,         // invitee must earn 100 pts before inviter gets bonus
+        inviteBonusCooldownHours: 24,  // min hours between invite bonuses (anti-spam)
         megaGoalPoints: 30000,      // mega goal threshold
         megaGoalUc: 100000,         // mega goal reward (UC)
         megaGoalLabel: 'PUBG X-Suit or 100,000 UC',  // mega goal prize
@@ -179,6 +182,11 @@ app.post('/api/signup', (req, res) => {
     lastActive: now,
     lastCheckin: 0,
     checkinStreak: 0,
+    inviteCode: '',             // user's unique invite code
+    invitedBy: '',              // who invited this user
+    inviteCount: 0,             // how many friends installed
+    inviteEarnings: 0,          // total pts earned from invites
+    inviteHistory: [],          // list of invitee deviceIds + timestamps + status
     adsWatchedToday: 0,
     adsResetAt: now + 86400000,
     quizDoneToday: 0,
@@ -225,6 +233,62 @@ app.post('/api/login', (req, res) => {
   db.sessions[token] = deviceId;
   saveDB();
   res.json({ ok: true, token, user });
+});
+
+// ============ INVITE FRIENDS SYSTEM ============
+function makeInviteCode(deviceId) {
+  // Short, memorable code from deviceId
+  const hash = crypto.createHash('md5').update(deviceId).digest('hex');
+  return 'UC' + hash.substring(0, 6).toUpperCase();
+}
+app.post('/api/invite/code', auth, (req, res) => {
+  const u = req.user;
+  if (!u.inviteCode) {
+    u.inviteCode = makeInviteCode(u.deviceId);
+    saveDB();
+  }
+  res.json({
+    code: u.inviteCode,
+    inviteCount: u.inviteCount || 0,
+    inviteEarnings: u.inviteEarnings || 0,
+    bonus: db.settings.inviteBonusPoints || 500,
+    link: 'https://uc-bounty-production.up.railway.app/?ref=' + u.inviteCode
+  });
+});
+
+// Called on signup/login to apply invite code (stored in localStorage, sent with /api/auth)
+app.post('/api/invite/apply', auth, (req, res) => {
+  const u = req.user;
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'No invite code' });
+  if (u.invitedBy) return res.json({ ok: true, message: 'Already applied', inviter: u.invitedBy });
+  // Find inviter by code
+  let inviter = null;
+  for (const [did, usr] of Object.entries(db.users)) {
+    if (usr.inviteCode === code) { inviter = usr; break; }
+  }
+  if (!inviter) return res.status(404).json({ error: 'Invalid invite code' });
+  if (inviter.deviceId === u.deviceId) return res.status(400).json({ error: 'Cannot invite yourself' });
+  u.invitedBy = code;
+  u.inviterDeviceId = inviter.deviceId;
+  inviter.inviteHistory = inviter.inviteHistory || [];
+  inviter.inviteHistory.push({ deviceId: u.deviceId, username: u.username || 'unknown', code: code, at: Date.now(), status: 'pending', earned: 0 });
+  saveDB();
+  res.json({ ok: true, inviter: inviter.username || 'User', message: 'Invite applied! Your inviter will get 500 pts when you earn 100+ pts.' });
+});
+
+// List user's invites + claim bonus when invitee reaches minPts
+app.get('/api/invite/list', auth, (req, res) => {
+  const u = req.user;
+  res.json({
+    code: u.inviteCode,
+    inviteCount: u.inviteCount || 0,
+    inviteEarnings: u.inviteEarnings || 0,
+    bonus: db.settings.inviteBonusPoints || 500,
+    minPts: db.settings.inviteMinPts || 100,
+    link: 'https://uc-bounty-production.up.railway.app/?ref=' + (u.inviteCode || ''),
+    history: u.inviteHistory || []
+  });
 });
 
 app.get('/api/challenge/status', auth, (req, res) => {
@@ -621,6 +685,8 @@ function addPoints(user, pts, source) {
   }
   // Check challenge completion
   checkChallengeBonus(user);
+  // Check invite bonus (inviter gets pts when invitee earns minPts)
+  checkInviteBonus(user, pts);
 }
 
 function checkChallengeBonus(user) {
@@ -635,6 +701,38 @@ function checkChallengeBonus(user) {
     user.challengeBonusAt = Date.now();
     saveDB(); // (bonus will appear in next /api/me + transactions)
   }
+}
+
+// Check if this user was invited and has earned enough -> give inviter bonus
+function checkInviteBonus(user, ptsEarned) {
+  if (!user.invitedBy) return;  // not invited
+  if (!user.inviterDeviceId) return;  // old data
+  if (user.inviteBonusGiven) return;  // already paid
+  const minPts = db.settings.inviteMinPts || 100;
+  if (user.totalPointsEarned < minPts) return;
+  // Find inviter
+  const inviter = db.users[user.inviterDeviceId];
+  if (!inviter) return;
+  // Cooldown check
+  const cooldownMs = (db.settings.inviteBonusCooldownHours || 24) * 3600 * 1000;
+  if (inviter.lastInviteBonusAt && (Date.now() - inviter.lastInviteBonusAt) < cooldownMs) {
+    // Inviter needs to wait, but mark invitee as ready
+    return;
+  }
+  const bonus = db.settings.inviteBonusPoints || 500;
+  inviter.points += bonus;
+  inviter.totalPointsEarned += bonus;
+  inviter.inviteCount = (inviter.inviteCount || 0) + 1;
+  inviter.inviteEarnings = (inviter.inviteEarnings || 0) + bonus;
+  inviter.lastInviteBonusAt = Date.now();
+  // Mark invitee as paid
+  user.inviteBonusGiven = true;
+  // Update inviter's history
+  if (inviter.inviteHistory) {
+    const h = inviter.inviteHistory.find(x => x.deviceId === user.deviceId);
+    if (h) { h.status = 'paid'; h.earned = bonus; h.paidAt = Date.now(); }
+  }
+  saveDB();
 }
 
 // ============ API: REDEEM ============

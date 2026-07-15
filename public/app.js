@@ -47,6 +47,7 @@ async function api(path, body = {}, needAuth = true) {
     throw e;
   }
 }
+async function apiPost(path, body) { return api(path, body); }
 async function apiGet(path) {
   const headers = { 'x-device-id': DEVICE_ID };
   if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
@@ -226,9 +227,75 @@ function sfxCoin()   { playTone(1200, 0.08, 'sine', 0.18); setTimeout(() => play
 function sfxWin()    { [0,100,200,300].forEach((d,i) => setTimeout(() => playTone(600 + i*200, 0.15, 'triangle', 0.20), d)); }
 function sfxLose()   { playTone(200, 0.20, 'sawtooth', 0.15); setTimeout(() => playTone(150, 0.25, 'sawtooth', 0.12), 100); }
 function sfxError()  { playTone(300, 0.10, 'square', 0.15); setTimeout(() => playTone(200, 0.15, 'square', 0.12), 80); }
-function sfxSpin()   { playTone(440, 0.05, 'square', 0.10); }
 function sfxSuccess() { [0,80,160].forEach((d,i) => setTimeout(() => playTone(800 + i*200, 0.10, 'sine', 0.18), d)); }
 function sfxLevelUp() { [0,100,200,300,400].forEach((d,i) => setTimeout(() => playTone(500 + i*150, 0.20, 'triangle', 0.22), d)); }
+
+// NEW: Cheerful reward sound (when earning points)
+function sfxReward() {
+  // C-E-G major chord arpeggio (happy!)
+  [523, 659, 784, 1047].forEach((freq, i) => {
+    setTimeout(() => playTone(freq, 0.18, 'sine', 0.20), i * 60);
+  });
+}
+
+// NEW: PARTY celebration sound (for jackpots/big wins)
+function sfxParty() {
+  // Multi-instrument party fanfare!
+  // Trumpet fanfare
+  [0, 100, 200, 300, 400, 500, 600, 700].forEach((d, i) => {
+    setTimeout(() => playTone(600 + i * 100, 0.20, 'triangle', 0.25), d);
+  });
+  // Air horn at the end
+  setTimeout(() => playTone(440, 0.4, 'sawtooth', 0.18), 800);
+  setTimeout(() => playTone(880, 0.3, 'sawtooth', 0.15), 900);
+  // Cheering crowd (white noise burst)
+  setTimeout(() => {
+    if (window._sfxMuted) return;
+    const c = _ctx(); if (!c) return;
+    try {
+      const bufferSize = c.sampleRate * 0.8;
+      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
+      const noise = c.createBufferSource();
+      noise.buffer = buffer;
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0.15, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8);
+      const filter = c.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1000;
+      noise.connect(filter).connect(gain).connect(c.destination);
+      noise.start();
+      noise.stop(c.currentTime + 0.8);
+    } catch(e) {}
+  }, 1000);
+}
+
+// NEW: Spin wheel ticking sound (loops while wheel spins)
+let _spinTickInterval = null;
+function startSpinSound() {
+  if (window._sfxMuted) return;
+  // Tick-tick-tick accelerating then slowing down
+  let tickCount = 0;
+  const tick = () => {
+    if (!window._sfxMuted) playTone(800 + (tickCount % 3) * 200, 0.04, 'square', 0.12);
+    tickCount++;
+    // Slow down over time (simulate wheel deceleration)
+    let delay = 50 + Math.min(tickCount * 8, 200);
+    if (tickCount > 30) {
+      stopSpinSound();
+      return;
+    }
+    _spinTickInterval = setTimeout(tick, delay);
+  };
+  tick();
+}
+function stopSpinSound() {
+  if (_spinTickInterval) { clearTimeout(_spinTickInterval); _spinTickInterval = null; }
+  // Final "ding" when wheel stops
+  playTone(1200, 0.15, 'sine', 0.20);
+}
 function toggleSfx() {
   window._sfxMuted = !window._sfxMuted;
   try { localStorage.setItem('ucb_sfxMuted', window._sfxMuted ? '1' : '0'); } catch(e) {}
@@ -292,6 +359,76 @@ function closeMegaGoalModal() {
   try { localStorage.setItem('ucb_megaGoalDismissed', String(Date.now())); } catch(e) {}
 }
 
+// ===== INVITE FRIENDS =====
+async function openInvite() {
+  document.getElementById('inviteModal').classList.remove('hidden');
+  sfxClick();
+  try {
+    const r = await apiPost('/api/invite/code', {});
+    if (r) {
+      document.getElementById('inviteCodeText').textContent = r.code;
+      document.getElementById('inviteLinkInput').value = r.link;
+      document.getElementById('inviteCountText').textContent = r.inviteCount || 0;
+      document.getElementById('inviteEarningsText').textContent = (r.inviteEarnings || 0).toLocaleString();
+    }
+    // Load history
+    const lst = await apiGet('/api/invite/list');
+    if (lst && lst.history) {
+      let h = '';
+      lst.history.slice(-5).reverse().forEach(item => {
+        const ago = Math.floor((Date.now() - item.at) / 60000);
+        const agoStr = ago < 60 ? ago + 'm ago' : Math.floor(ago / 60) + 'h ago';
+        h += '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 8px;margin:4px 0;display:flex;justify-content:space-between;align-items:center"><div style="color:#fff;font-size:11px">' + (item.username || 'User') + '<br><span style="color:#888;font-size:10px">' + agoStr + '</span></div><div style="color:' + (item.status === 'paid' ? '#00ff88' : '#FFD700') + ';font-size:11px;font-weight:bold">' + (item.status === 'paid' ? '+' + item.earned : 'pending') + '</div></div>';
+      });
+      if (!h) h = '<p style="color:#666;font-size:11px;text-align:center;margin:8px 0">No invites yet. Share your code!</p>';
+      document.getElementById('inviteHistoryBox').innerHTML = h;
+    }
+  } catch(e) { toast('❌ ' + e.message); }
+}
+function copyInviteCode() {
+  const code = document.getElementById('inviteCodeText').textContent;
+  if (!code || code === 'LOADING...') return;
+  navigator.clipboard.writeText(code).then(() => { toast('✅ Code copied!'); sfxCoin(); }).catch(() => { toast('Code: ' + code); });
+}
+function copyInviteLink() {
+  const link = document.getElementById('inviteLinkInput').value;
+  if (!link) return;
+  navigator.clipboard.writeText(link).then(() => { toast('✅ Link copied!'); sfxCoin(); }).catch(() => { toast('Link: ' + link); });
+}
+function shareWhatsApp() {
+  const code = document.getElementById('inviteCodeText').textContent;
+  const link = document.getElementById('inviteLinkInput').value;
+  const msg = encodeURIComponent('🎁 Join me on UC Bounty and earn free UC for PUBG!\n\nUse my invite code: ' + code + '\nDownload: ' + link + '\n\nYou get 50 pts signup bonus + we both get 500 pts when you earn 100 pts! 💎');
+  window.open('https://wa.me/?text=' + msg, '_blank');
+  sfxCoin();
+}
+function shareTelegram() {
+  const code = document.getElementById('inviteCodeText').textContent;
+  const link = document.getElementById('inviteLinkInput').value;
+  const msg = encodeURIComponent('🎁 Join UC Bounty - earn UC for PUBG!\n\nInvite code: ' + code + '\n' + link);
+  window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + msg, '_blank');
+  sfxCoin();
+}
+// Apply invite code on app init (from URL ?ref=CODE)
+async function applyInviteCodeIfAny() {
+  const url = new URL(window.location.href);
+  let code = url.searchParams.get('ref');
+  if (!code) {
+    try { code = localStorage.getItem('ucb_pendingInvite'); } catch(e) {}
+  }
+  if (!code) return;
+  // Save to localStorage so it persists across navigation
+  try { localStorage.setItem('ucb_pendingInvite', code); } catch(e) {}
+  try {
+    const r = await apiPost('/api/invite/apply', { code: code });
+    if (r && r.ok) {
+      toast('🎁 ' + r.message);
+      sfxReward();
+      try { localStorage.removeItem('ucb_pendingInvite'); } catch(e) {}
+    }
+  } catch(e) { console.log('Invite apply:', e.message); }
+}
+
 // ===== DAILY CHALLENGE =====
 let CHALLENGE = { adsToday: 0, target: 100, bonus: 1000, completed: false, progress: 0 };
 async function refreshChallenge() {
@@ -333,6 +470,55 @@ function closeChallengeDoneModal() {
   if (typeof confettiBurst === 'function') confettiBurst();
   sfxWin();
 }
+
+// ===== TOP/BOTTOM BANNER ADS (Monetag rotation) =====
+const BANNER_OFFERS = [
+  { text: 'Tap to claim bonus rewards!', emoji: '🎁', url: 'https://omg10.com/4/11286726' },
+  { text: '💎 Get 1000 free coins - tap here!', emoji: '💎', url: 'https://omg10.com/4/11286726' },
+  { text: '🔥 Hot offer: 50% bonus today only!', emoji: '🔥', url: 'https://omg10.com/4/11286726' },
+  { text: '🎮 Free game download - earn $5!', emoji: '🎮', url: 'https://omg10.com/4/11286726' },
+  { text: '📱 Install this app → get $10!', emoji: '📱', url: 'https://omg10.com/4/11286726' },
+  { text: '⚡ Limited time: Claim 500 pts!', emoji: '⚡', url: 'https://omg10.com/4/11286726' },
+  { text: '🎁 Sponsored: Win iPhone 15!', emoji: '🎁', url: 'httpsomg10.com/4/11286726' }
+];
+let _bannerIdx = 0;
+let _bottomBannerIdx = 0;
+function clickTopBanner() {
+  const offer = BANNER_OFFERS[_bannerIdx];
+  try { window.open(offer.url, '_blank'); } catch(e) {}
+  if (typeof sfxClick === 'function') sfxClick();
+  // Monetag pays for click + time on page
+  setTimeout(() => { try { window.open(offer.url, '_blank'); } catch(e) {} }, 2000);
+}
+function clickBottomBanner() {
+  const offer = BANNER_OFFERS[_bottomBannerIdx];
+  try { window.open(offer.url, '_blank'); } catch(e) {}
+  if (typeof sfxClick === 'function') sfxClick();
+}
+function rotateTopBanner() {
+  _bannerIdx = (_bannerIdx + 1) % BANNER_OFFERS.length;
+  document.getElementById('topBannerText').textContent = BANNER_OFFERS[_bannerIdx].text;
+  if (typeof sfxClick === 'function') sfxClick();
+}
+function hideTopBanner() {
+  const b = document.getElementById('topBannerAd');
+  if (b) b.style.display = 'none';
+  try { localStorage.setItem('ucb_topBannerHidden', '1'); } catch(e) {}
+}
+function rotateBottomBanner() {
+  _bottomBannerIdx = (_bottomBannerIdx + 1) % BANNER_OFFERS.length;
+  const offer = BANNER_OFFERS[_bottomBannerIdx];
+  document.getElementById('bottomBannerText').textContent = offer.text;
+  if (typeof sfxClick === 'function') sfxClick();
+}
+// Auto-rotate top banner every 8 seconds
+setInterval(() => {
+  if (document.getElementById('topBannerAd').style.display !== 'none') rotateTopBanner();
+}, 8000);
+// Auto-rotate bottom banner every 10 seconds
+setInterval(() => {
+  rotateBottomBanner();
+}, 10000);
 
 // ===== CONFETTI BURST (used on rewards) =====
 function confettiBurst() {
@@ -472,17 +658,19 @@ async function claimAd(mult) {
     const label = j.isJackpot ? '🎰 JACKPOT!' : ('Watched ad' + (mult > 1 ? ' (2X)' : ''));
     pushTx(label, j.points);
     toast('+' + j.points + ' pts' + (mult > 1 ? ' (2X!)' : '') + (j.isJackpot ? ' 🎰💎' : '') + '!');
+    sfxReward();
     // 🎉 Confetti + sound celebration!
     if (typeof confettiBurst === 'function') confettiBurst();
     sfxCoin();
-    if (j.isJackpot) {
-      // MEGA JACKPOT celebration!
-      setTimeout(() => sfxLevelUp(), 100);
+    if (j.isJackpot || j.points >= 50) {
+      // 🎉 PARTY CELEBRATION for big wins!
+      setTimeout(() => sfxParty(), 100);
       setTimeout(() => confettiBurst(), 400);
       setTimeout(() => confettiBurst(), 800);
-      setTimeout(() => sfxWin(), 600);
+      setTimeout(() => confettiBurst(), 1200);
     } else {
-      setTimeout(() => sfxWin(), 100);
+      // Normal win: cheerful reward sound
+      setTimeout(() => sfxReward(), 100);
       if (mult > 1) setTimeout(() => confettiBurst(), 400);
     }
     // Refresh challenge + show popup if earned 200+ pts
@@ -568,23 +756,43 @@ async function spinNow() {
     const j = await api('/api/earn/spin', {});
     SPIN_RESULT = j.points;
     USER = j.user;
-    const segs = SETTINGS.spinRewards.length;
-    const idx = SETTINGS.spinRewards.indexOf(SPIN_RESULT);
-    const deg = 360 * 5 + (360 - idx * (360 / segs) - (360 / segs) / 2);
-    document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
+    // Use the 9 wheel segments: 10, 15, 20, 30, 50, 75, 100, 200, jackpot(500)
+    const wheelValues = [10, 15, 20, 30, 50, 75, 100, 200, 500];
+    // Find closest matching segment
+    let idx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < wheelValues.length; i++) {
+      const diff = Math.abs(wheelValues[i] - SPIN_RESULT);
+      if (diff < minDiff) { minDiff = diff; idx = i; }
+    }
+    const segs = wheelValues.length;
+    // Reset + spin: ensure each spin rotates (use cumulative rotation)
+    const baseRot = window._lastSpinRot || 0;
+    const newRot = baseRot + 360 * 6 + (360 - idx * (360 / segs) - (360 / segs) / 2);
+    window._lastSpinRot = newRot % 360;
+    const wheel = document.getElementById('wheel');
+    wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.24, 1)';
+    wheel.style.transform = `rotate(${newRot}deg)`;
+    // Play spinning sound (ticking)
+    if (typeof startSpinSound === 'function') startSpinSound();
     setTimeout(() => {
-      if (j.isJackpot) {
-        sfxLevelUp();
+      if (typeof stopSpinSound === 'function') stopSpinSound();
+      if (j.isJackpot || SPIN_RESULT >= 100) {
+        // 🎉 PARTY CELEBRATION for big wins!
+        if (typeof sfxParty === 'function') sfxParty();
         toast('🎰 JACKPOT! +' + SPIN_RESULT + ' pts! 💎');
-        if (typeof confettiBurst === 'function') confettiBurst();
-        setTimeout(() => confettiBurst(), 400);
-        setTimeout(() => confettiBurst(), 800);
-        setTimeout(() => sfxWin(), 300);
+        if (typeof confettiBurst === 'function') {
+          confettiBurst();
+          setTimeout(() => confettiBurst(), 400);
+          setTimeout(() => confettiBurst(), 800);
+          setTimeout(() => confettiBurst(), 1200);
+        }
       } else {
-        sfxWin();
+        // Normal win: cheerful reward sound
+        if (typeof sfxReward === 'function') sfxReward();
         toast('🎰 +' + SPIN_RESULT + ' pts!');
       }
-      pushTx(j.isJackpot ? '🎰 SPIN JACKPOT!' : 'Lucky spin', SPIN_RESULT);
+      pushTx(j.isJackpot || SPIN_RESULT >= 100 ? '🎰 SPIN JACKPOT!' : 'Lucky spin', SPIN_RESULT);
       refreshUI();
       if (j.spinsLeft !== undefined) {
         USER.spinsToday = (SETTINGS.spinsPerDay || 3) - j.spinsLeft;
@@ -705,6 +913,7 @@ async function endGame() {
     USER = j.user;
     pushTx('Tap game (' + gameState.score + ')', j.points);
     refreshUI();
+    sfxReward();
     toast('🎮 +' + j.points + ' pts!');
   } catch (e) { toast('❌ ' + e.message); }
   setTimeout(() => closeModal('gameModal'), 800);
@@ -717,6 +926,7 @@ async function checkin() {
     USER = j.user;
     pushTx('Daily check-in (streak ' + j.streak + ')', j.points);
     refreshUI();
+    sfxReward();
     toast('🔥 +' + j.points + ' pts! (Streak: ' + j.streak + ')');
   } catch (e) { toast('❌ ' + e.message); }
 }
