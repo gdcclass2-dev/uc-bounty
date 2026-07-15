@@ -593,12 +593,12 @@ function selectPayMethod(m, btn) {
   if (btn) btn.classList.add('active');
   const details = document.getElementById('payDetails');
   const map = {
-    jazzcash:   { title: '📱 JazzCash',   number: '03XX-XXXXXXX',  name: 'Your Name' },
-    easypaisa:  { title: '📱 Easypaisa',  number: '03XX-XXXXXXX',  name: 'Your Name' },
-    bank:       { title: '🏦 Bank Transfer', number: 'Account: XXXXXX', name: 'Your Name' },
-    card:       { title: '💳 Card / Stripe', number: 'Secure checkout', name: 'Card holder' },
-    usdt:       { title: '💎 USDT (TRC20)', number: 'TXxxxxxxxxxxx', name: 'Wallet address' },
-    paypal:     { title: '🅿️ PayPal',     number: 'pay@ucbounty.com', name: 'PayPal email' }
+    jazzcash:   { title: '📱 JazzCash',   number: '03470964126',  name: 'UC Bounty' },
+    easypaisa:  { title: '📱 Easypaisa',  number: '03470964126',  name: 'UC Bounty' },
+    bank:       { title: '🏦 Bank Transfer', number: 'Contact admin', name: 'UC Bounty' },
+    card:       { title: '💳 Card / Stripe', number: 'Secure checkout (coming soon)', name: 'Card holder' },
+    usdt:       { title: '💎 USDT (TRC20)', number: 'Contact admin on WhatsApp', name: 'Wallet address' },
+    paypal:     { title: '🅿️ PayPal',     number: 'Coming soon', name: 'PayPal email' }
   };
   const d = map[m];
   details.innerHTML = '<div class="pay-info">' +
