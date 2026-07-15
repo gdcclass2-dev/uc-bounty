@@ -803,7 +803,7 @@ async function spinNow() {
     SPIN_RESULT = j.points;
     USER = j.user;
     // Use the 9 wheel segments: 10, 15, 20, 30, 50, 75, 100, 200, jackpot(500)
-    const wheelValues = [10, 15, 20, 30, 50, 75, 100, 200, 500];
+    const wheelValues = [5, 10, 15, 20, 25, 30, 50, 75, 100];
     // Find closest matching segment
     let idx = 0;
     let minDiff = Infinity;
@@ -814,8 +814,9 @@ async function spinNow() {
     const segs = wheelValues.length;
     // Reset + spin: ensure each spin rotates (use cumulative rotation)
     const baseRot = window._lastSpinRot || 0;
+    // Always rotate forward (use absolute rotation, not modulo)
     const newRot = baseRot + 360 * 6 + (360 - idx * (360 / segs) - (360 / segs) / 2);
-    window._lastSpinRot = newRot % 360;
+    window._lastSpinRot = newRot;  // Keep absolute, don't modulo
     const wheel = document.getElementById('wheel');
     wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.24, 1)';
     wheel.style.transform = `rotate(${newRot}deg)`;
@@ -845,8 +846,8 @@ async function spinNow() {
       }
       updateSpinCounter();
       btn.disabled = false;
-      closeModal('spinModal');
-    }, 4200);
+      // keep modal open for next spin
+    }, 3500);
   } catch (e) {
     sfxError();
     toast('❌ ' + e.message);
@@ -916,11 +917,11 @@ async function onQuizAnswer(picked, btn) {
     }
     USER = j.user;
     refreshUI();
-    setTimeout(() => loadNextQuestion(), 1500);
+    setTimeout(() => loadNextQuestion(), 600);
   } catch (e) {
     sfxError();
     toast('❌ ' + e.message);
-    setTimeout(() => loadNextQuestion(), 1500);
+    setTimeout(() => loadNextQuestion(), 600);
   }
 }
 async function finishQuiz() {
