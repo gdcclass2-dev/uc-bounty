@@ -361,18 +361,20 @@ async function watchAd() {
   // Show CLAIM / 2X buttons instead of auto-claim
   const showClaimUI = (mult) => {
     adState.multiplier = mult;
-    const pts = (USER.premium ? 60 : 30) * mult;
+    const base = USER.premium ? 15 : 10;  // min possible
+    const max = USER.premium ? 150 : 100;  // max possible (jackpot)
+    const avg = USER.premium ? 30 : 20;   // average
     content.innerHTML = `
-      <div style="font-size:60px;margin-bottom:6px">✅</div>
+      <div style="font-size:60px;margin-bottom:6px;animation:bounce 1s infinite">🎁</div>
       <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:4px 0">Ad verified!</p>
-      <p style="color:#aaa;font-size:12px;margin:2px 0 12px 0">Choose how to claim:</p>
+      <p style="color:#aaa;font-size:12px;margin:2px 0 12px 0">🎰 Win 10-100 pts randomly!</p>
       <button id="claimNormalBtn" class="btn btn-ghost btn-block" style="margin-bottom:8px" onclick="claimAd(1)">
-        💰 CLAIM +${pts} pts
+        💰 CLAIM ${base}-${max} pts 🎲
       </button>
       <button id="claim2xBtn" class="btn btn-gold btn-block" style="background:linear-gradient(135deg,#ff6b6b,#FFD700);animation:pulse 2s infinite" onclick="claimAd2x()">
-        🔥 WATCH ANOTHER AD → 2X = +${pts * 2} pts!
+        🔥 WATCH ANOTHER AD → 2X (up to ${max * 2} pts!) 💎
       </button>
-      <p style="color:#888;font-size:11px;margin-top:8px">⏱️ Tap within 30s or it auto-claims normal</p>
+      <p style="color:#888;font-size:11px;margin-top:8px">⏱️ Tap within 30s · Avg ${avg} pts</p>
     `;
     fill.style.width = '100%';
     // Auto-claim normal after 30s if no choice
@@ -412,13 +414,22 @@ async function claimAd(mult) {
   try {
     const j = await api('/api/earn/ad/claim', { adToken: adState.adToken, multiplier: mult || 1 });
     USER = j.user; refreshUI();
-    pushTx('Watched ad' + (mult > 1 ? ' (2X)' : ''), j.points);
-    toast('+' + j.points + ' pts' + (mult > 1 ? ' (2X BONUS!)' : '') + '!');
+    const label = j.isJackpot ? '🎰 JACKPOT!' : ('Watched ad' + (mult > 1 ? ' (2X)' : ''));
+    pushTx(label, j.points);
+    toast('+' + j.points + ' pts' + (mult > 1 ? ' (2X!)' : '') + (j.isJackpot ? ' 🎰💎' : '') + '!');
     // 🎉 Confetti + sound celebration!
     if (typeof confettiBurst === 'function') confettiBurst();
     sfxCoin();
-    setTimeout(() => sfxWin(), 100);
-    if (mult > 1) setTimeout(() => confettiBurst(), 400);
+    if (j.isJackpot) {
+      // MEGA JACKPOT celebration!
+      setTimeout(() => sfxLevelUp(), 100);
+      setTimeout(() => confettiBurst(), 400);
+      setTimeout(() => confettiBurst(), 800);
+      setTimeout(() => sfxWin(), 600);
+    } else {
+      setTimeout(() => sfxWin(), 100);
+      if (mult > 1) setTimeout(() => confettiBurst(), 400);
+    }
     // Refresh challenge + show popup if earned 200+ pts
     refreshChallenge().then(() => {
       maybeShowChallengePopup(prevPoints);
@@ -455,7 +466,7 @@ async function claimAd2x() {
     <p style="color:#FFD700;font-weight:bold;font-size:18px;margin:4px 0">2X BONUS AD OPENED!</p>
     <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #ff6b6b;border-radius:12px;padding:14px;margin:14px 0;animation:pulse 2s infinite">
       <p style="color:#ff6b6b;font-weight:bold;font-size:15px;margin:0 0 6px 0">👆 TAP THE BACK BUTTON</p>
-      <p style="color:#fff;font-size:13px;margin:0">to claim your <span style="color:#00ff88;font-weight:bold">2X = +${(USER.premium ? 60 : 30) * 2} pts</span></p>
+      <p style="color:#fff;font-size:13px;margin:0">to claim your <span style="color:#00ff88;font-weight:bold">2X (up to ${(USER.premium ? 150 : 100)} pts) 💎</span></p>
     </div>
     <p style="color:#00E5FF;font-size:12px;margin:6px 0">⏱️ Watch the 2nd ad (or skip) then come back</p>
   `;

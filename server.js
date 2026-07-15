@@ -325,15 +325,26 @@ app.post('/api/earn/ad/claim', auth, (req, res) => {
   u.adsWatchedToday++;
   // Support 2X multiplier: user watches 2 ads, gets 2x points (we get 2x revenue!)
   const mult = Math.min(2, Math.max(1, parseInt(req.body.multiplier) || 1));
-  const basePts = u.premium ? 60 : 30;  // premium 2x base
-  const pts = basePts * mult;  // 2x = 60 free, 120 premium
+  // Random reward system (weighted) - avg ~20 pts to keep it profitable
+  const roll = Math.random() * 100;
+  let basePts;
+  if (roll < 0.5) basePts = 100;          // 0.5% MEGA JACKPOT!
+  else if (roll < 2) basePts = 50;       // 1.5% jackpot
+  else if (roll < 10) basePts = 30;      // 8% great
+  else if (roll < 25) basePts = 25;      // 15% good
+  else if (roll < 55) basePts = 20;      // 30% nice
+  else if (roll < 80) basePts = 15;      // 25% ok
+  else basePts = 10;                     // 20% small
+  // Premium gets 1.5x base (premium bonus on top of random)
+  if (u.premium) basePts = Math.round(basePts * 1.5);
+  const pts = basePts * mult;  // 2x multiplies the random
   u.dailyAdPointTotal += pts;
   u.lastAdClaimAt = now;
   delete u._pendingAd;
   // Count both ads for daily challenge tracking
   for (let i = 0; i < mult; i++) addPoints(u, basePts, 'ad');
   saveDB();
-  res.json({ ok: true, points: pts, multiplier: mult, user: u });
+  res.json({ ok: true, points: pts, basePts: basePts, multiplier: mult, isJackpot: basePts >= 50, user: u });
 });
 
 // QUIZ: client submits which question index + answer, server picks daily questions and tracks which are answered
