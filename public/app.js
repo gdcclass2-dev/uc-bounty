@@ -1,4 +1,4 @@
-// ===== UC BOUNTY - FRONTEND (v2: anti-fraud + bigger quiz bank) =====
+// ===== FREE UC EARNER - FRONTEND (v2: anti-fraud + bigger quiz bank) =====
 
 // ===== DEVICE FINGERPRINT (per device, not per user) =====
 function getDeviceId() {
@@ -1176,7 +1176,7 @@ async function submitRedeem() {
     refreshUI();
     closeModal('pubgModal');
     document.getElementById('successMsg').textContent =
-      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted! 🎮 Your UC will be sent to your PUBG account (ID: ' + pubgId + ') within 7 days. Thank you for using UC BOUNTY!';
+      'Your request for ' + SETTINGS.ucPerRedeem + ' UC has been submitted! 🎮 Your UC will be sent to your PUBG account (ID: ' + pubgId + ') within 7 days. Thank you for using FREE UC EARNER!';
     document.getElementById('successModal').classList.remove('hidden');
   } catch (e) { toast('❌ ' + e.message); }
 }
