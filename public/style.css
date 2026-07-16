@@ -128,6 +128,121 @@ input, textarea { outline: none; border: none; }
 .input-group input:focus { border-color: var(--orange); }
 .auth-fine { font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 16px; line-height: 1.5; }
 
+/* ===== AUTH: TABS ===== */
+.auth-tabs {
+  display: flex; gap: 6px; background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 4px; margin-bottom: 20px;
+}
+.auth-tab {
+  flex: 1; padding: 10px; background: transparent;
+  border: none; color: var(--text-dim); font-weight: 700;
+  font-size: 13px; letter-spacing: 1px; border-radius: 9px;
+  cursor: pointer; transition: all .2s;
+  text-transform: uppercase;
+}
+.auth-tab.active {
+  background: linear-gradient(135deg, var(--orange), #ff8533);
+  color: #fff; box-shadow: 0 3px 10px rgba(255,107,0,.4);
+}
+.auth-tab:not(.active):hover { color: var(--text); background: rgba(255,255,255,.04); }
+
+/* ===== AUTH: LABELS WITH ICONS ===== */
+.input-group .lbl-icon { margin-right: 4px; font-size: 13px; }
+
+/* ===== AUTH: INPUT WRAP (with status icon + eye toggle) ===== */
+.input-wrap { position: relative; }
+.input-wrap input {
+  width: 100%; padding: 14px 44px 14px 14px; background: var(--bg-2);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: 15px; transition: all .2s;
+  font-family: inherit;
+}
+.input-wrap input::placeholder { color: #555; }
+.input-wrap input:focus {
+  border-color: var(--orange);
+  background: rgba(255,107,0,.04);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,107,0,.12);
+}
+.input-wrap input.valid {
+  border-color: #2ecc71;
+  background: rgba(46,204,113,.04);
+}
+.input-wrap input.invalid {
+  border-color: #e74c3c;
+  background: rgba(231,76,60,.04);
+}
+.input-status {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 18px; pointer-events: none; opacity: 0; transition: opacity .2s;
+}
+.input-wrap input.valid ~ .input-status::after { content: '✓'; color: #2ecc71; opacity: 1; }
+.input-wrap input.invalid ~ .input-status::after { content: '✗'; color: #e74c3c; opacity: 1; }
+.input-wrap input.valid ~ .input-status,
+.input-wrap input.invalid ~ .input-status { opacity: 1; }
+
+/* ===== EYE TOGGLE ===== */
+.eye-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; cursor: pointer;
+  font-size: 18px; padding: 4px 8px; opacity: .5; transition: opacity .2s;
+  z-index: 2;
+}
+.eye-toggle:hover { opacity: 1; }
+.input-wrap input[type="text"].pw-shown { letter-spacing: 1px; }
+
+/* ===== PASSWORD STRENGTH ===== */
+.pw-strength {
+  height: 4px; background: var(--bg-2); border-radius: 2px;
+  margin-top: 8px; overflow: hidden;
+}
+.pw-bar {
+  height: 100%; width: 0%; transition: all .3s;
+  background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71);
+}
+.pw-bar.weak { width: 33%; background: #e74c3c; }
+.pw-bar.fair { width: 66%; background: #f39c12; }
+.pw-bar.strong { width: 100%; background: #2ecc71; }
+
+/* ===== HINT TEXT ===== */
+.hint {
+  display: block; font-size: 11px; color: #666;
+  margin-top: 6px; line-height: 1.4;
+  transition: color .2s;
+}
+.hint.error { color: #e74c3c; }
+.hint.success { color: #2ecc71; }
+
+/* ===== AUTH: ERROR ===== */
+.auth-error {
+  color: #ff6b6b; background: rgba(231,76,60,.1);
+  border: 1px solid rgba(231,76,60,.3); border-radius: 8px;
+  padding: 10px 12px; font-size: 13px; text-align: center;
+  margin: 12px 0 0; display: none; animation: shake .3s;
+}
+.auth-error.show { display: block; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ===== AUTH: BUTTON (loading) ===== */
+.btn.loading { position: relative; color: transparent !important; pointer-events: none; }
+.btn.loading::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 18px; height: 18px; margin: -9px 0 0 -9px;
+  border: 2.5px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== HIDE SIGNUP-ONLY FIELDS IN LOGIN MODE ===== */
+body.auth-login [data-only="signup"] { display: none; }
+
+
 /* ===== BUTTONS ===== */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;

@@ -200,13 +200,21 @@ function adminAuth(req, res, next) {
 
 // ============ API: AUTH ============
 app.post('/api/signup', (req, res) => {
-  const { username, pubgId, deviceId, fp } = req.body;
-  if (!username || !deviceId) return res.status(400).json({ error: 'Missing fields' });
-  if (username.length < 3 || username.length > 16) return res.status(400).json({ error: 'Username 3-16 chars' });
-  if (db.users[deviceId]) return res.status(409).json({ error: 'Device already registered' });
+  const { username, password, pubgId, deviceId, fp, refCode } = req.body;
+  if (!username || !password || !deviceId) return res.status(400).json({ error: 'Missing required fields' });
+  // strict username: 3-16 chars, alphanumeric + underscore
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(username)) return res.status(400).json({ error: 'Username must be 3-16 chars (letters, numbers, underscores only)' });
+  // password: 6-32 chars
+  if (password.length < 6 || password.length > 32) return res.status(400).json({ error: 'Password must be 6-32 characters' });
+  // pubg id: optional, but if provided must be 8-12 digits
+  if (pubgId && !/^[0-9]{8,12}$/.test(pubgId)) return res.status(400).json({ error: 'PUBG ID must be 8-12 digits' });
+  if (db.users[deviceId]) return res.status(409).json({ error: 'This device is already registered. Please login instead.' });
 
   const taken = Object.values(db.users).find(u => u.username.toLowerCase() === username.toLowerCase());
-  if (taken) return res.status(409).json({ error: 'Username taken' });
+  if (taken) return res.status(409).json({ error: 'Username already taken. Please choose another.' });
+  // ensure unique password not used by another device (basic)
+  const pwdTaken = Object.values(db.users).find(u => u.password && u.username.toLowerCase() !== username.toLowerCase() && u.password === password);
+  if (pwdTaken) return res.status(409).json({ error: 'This password is already used. Please choose a different one.' });
 
   const token = crypto.randomBytes(24).toString('hex');
   db.sessions[token] = deviceId;
@@ -214,6 +222,7 @@ app.post('/api/signup', (req, res) => {
   db.users[deviceId] = {
     deviceId,
     fp: fp || '',
+    password, // store for login lookup (no email/phone = simpler auth)
     username,
     pubgId: pubgId || '',
     points: db.settings.signupBonus,
@@ -271,12 +280,23 @@ app.post('/api/signup', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  const { deviceId } = req.body;
-  const user = db.users[deviceId];
-  if (!user) return res.status(404).json({ error: 'Not found' });
-  if (user.banned) return res.status(403).json({ error: 'Banned' });
+  const { deviceId, username, password } = req.body;
+  let user = null;
+  // Try deviceId first (auto-login flow)
+  if (deviceId && db.users[deviceId]) {
+    user = db.users[deviceId];
+  } else if (username && password) {
+    // Manual login: find user by username + password
+    user = Object.values(db.users).find(u =>
+      u.username.toLowerCase() === String(username).toLowerCase() && u.password === password
+    );
+    if (!user) return res.status(401).json({ error: 'Invalid username or password' });
+  } else {
+    return res.status(400).json({ error: 'Missing credentials' });
+  }
+  if (user.banned) return res.status(403).json({ error: 'Account banned. Contact support.' });
   const token = crypto.randomBytes(24).toString('hex');
-  db.sessions[token] = deviceId;
+  db.sessions[token] = user.deviceId;
   saveDB();
   res.json({ ok: true, token, user });
 });

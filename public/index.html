@@ -59,24 +59,62 @@
 <div id="auth" class="screen">
   <div class="auth-card">
     <div class="logo-small">
-      <div class="crosshair">🎯</div>
+      <img src="icon-192.png" alt="logo" style="width:60px;height:60px;border-radius:14px;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 12px rgba(255,215,0,0.5))"/>
       <h2>FREE UC <span>EARNER</span></h2>
     </div>
-    <p class="auth-sub">Watch ads. Earn real UC.</p>
-    <div class="input-group">
-      <label>In-game Name</label>
-      <input id="authUsername" type="text" placeholder="e.g. ShadowHunter" maxlength="16" autocomplete="off">
+    <p class="auth-sub" id="authSub">Create your account & start earning</p>
+
+    <!-- TABS: Login | Sign Up -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="signup">Sign Up</button>
+      <button class="auth-tab" data-tab="login">Login</button>
     </div>
+
+    <!-- USERNAME -->
     <div class="input-group">
-      <label>PUBG Player ID <span class="optional">(optional now, required to redeem)</span></label>
-      <input id="authPubgId" type="text" placeholder="e.g. 5123456789" maxlength="20" autocomplete="off">
+      <label><span class="lbl-icon">👤</span> Username</label>
+      <div class="input-wrap">
+        <input id="authUsername" type="text" placeholder="3-16 chars, letters/numbers/_" maxlength="16" autocomplete="username" spellcheck="false">
+        <span class="input-status" id="statusUsername"></span>
+      </div>
+      <small class="hint" id="hintUsername">Letters, numbers and underscores only</small>
     </div>
+
+    <!-- PASSWORD -->
     <div class="input-group">
-      <label>Referral Code <span class="optional">(optional)</span></label>
-      <input id="authRef" type="text" placeholder="Friend's code" maxlength="12" autocomplete="off">
+      <label><span class="lbl-icon">🔒</span> Password</label>
+      <div class="input-wrap">
+        <input id="authPassword" type="password" placeholder="6+ characters" maxlength="32" autocomplete="new-password">
+        <button type="button" class="eye-toggle" id="eyeToggle" tabindex="-1" aria-label="Show password">👁️</button>
+        <span class="input-status" id="statusPassword"></span>
+      </div>
+      <div class="pw-strength" id="pwStrength"><div class="pw-bar" id="pwBar"></div></div>
+      <small class="hint" id="hintPassword">Minimum 6 characters</small>
     </div>
-    <button id="authSubmit" class="btn btn-primary">START HUNTING</button>
-    <p class="auth-fine">By continuing you accept that points are earned by watching ads & completing offers. UC is transferred manually by the admin within 24–48h after a valid request.</p>
+
+    <!-- PUBG ID (signup only) -->
+    <div class="input-group" data-only="signup">
+      <label><span class="lbl-icon">🎮</span> PUBG Player ID <span class="optional">(required to redeem UC)</span></label>
+      <div class="input-wrap">
+        <input id="authPubgId" type="tel" placeholder="8-12 digits, e.g. 5123456789" maxlength="12" inputmode="numeric" autocomplete="off">
+        <span class="input-status" id="statusPubg"></span>
+      </div>
+      <small class="hint" id="hintPubg">Your numeric PUBG Mobile player ID</small>
+    </div>
+
+    <!-- REFERRAL (signup only) -->
+    <div class="input-group" data-only="signup">
+      <label><span class="lbl-icon">🎁</span> Referral Code <span class="optional">(optional)</span></label>
+      <div class="input-wrap">
+        <input id="authRef" type="text" placeholder="Friend's invite code" maxlength="12" autocomplete="off" spellcheck="false">
+        <span class="input-status" id="statusRef"></span>
+      </div>
+      <small class="hint">Get 500 bonus pts when your friend earns 100+</small>
+    </div>
+
+    <button id="authSubmit" class="btn btn-primary">CREATE ACCOUNT</button>
+    <p id="authError" class="auth-error"></p>
+    <p class="auth-fine">By continuing you accept that points are earned by watching ads & completing offers. UC is transferred manually by the admin within 24-48h after a valid request.</p>
   </div>
 </div>
 
